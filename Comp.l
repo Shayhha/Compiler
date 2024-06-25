@@ -41,8 +41,7 @@ do {return DO;}
 & {return ADDRESS;}
 /* ================================= */
 /* =========Literal Lexemes======== */
-true {yylval = 1; return BOOL;}
-false {yylval = 0; return BOOL;}
+true | false {yylval.str = _strdup(yytext); return BOOL;}
 '[a-zA-Z]' {yylval.str = _strdup(yytext); return CHAR;}
 (-)?[1-9]+[0-9]* {yylval = atoi(yytext); return INT;}
 (0x|0X)[0-9A-F]+ {yylval.str = _strdup(yytext); return INT;}
