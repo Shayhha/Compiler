@@ -1,15 +1,6 @@
 %{
     #include <stdio.h>
 %}
-
-%union {
-    int intval;
-    int* intptr;
-    float floatval;
-    float* floatptr;
-    char charval;
-    char* strval;
-}
 %%
 /* =========Keywords Lexemes======== */
 bool {return BOOL;}
