@@ -6,18 +6,22 @@
 bool {return BOOL;}
 char {return CHAR;}
 int {return INT;}
-real {return REAL;}
+double {return DOUBLE;}
+float {return FLOAT};
 string {return STRING;}
 int* {return INT_PTR;}
 char* {return CHAR_PTR;}
-real* {return REAL_PTR;}
+double* {return DOUBLE_PTR;}
+float* {return FOLAT_PTR;}
 if {return IF;}
 else {return ELSE;}
 while {return WHILE;}
 for {return FOR;}
 var {return VAR;}
-arg-> {return ARG;}
-function {return FUNC;}
+args>> {return ARGS;}
+public {return PUBLIC;}
+private {return PRIVATE;}
+static {return STATIC;}
 return {return RETURN;}
 null {return NULL;}
 void {return VOID;}
@@ -26,7 +30,7 @@ do {return DO;}
 /* =========Operator Lexemes======== */
 && {return AND;}
 / {return DIVIDE;}
-= {return ASSIGN;}
+<- {return ASSIGN;}
 == {return EQUAL;}
 > {return GREATER;}
 >= {return GREATER_EQ;}
@@ -41,18 +45,32 @@ do {return DO;}
 & {return ADDRESS;}
 /* ================================= */
 /* =========Literal Lexemes======== */
-true | false {yylval.strval = strdup(yytext); return BOOL;}
-'[a-zA-Z]' {yylval.strval = strdup(yytext); return CHAR;}
-(-)?[1-9]+[0-9]* {yylval.intval = atoi(yytext); return INT;}
-(0x|0X)[0-9A-F]+ {yylval.strval = strdup(yytext); return INT;}
-\.[0-9]* | \.[1-9][0-9]*([eE][+-]?[0-9]+)? | \.[0-9]+([eE][+-]?[0-9]+)? {yylval.strval = strdup(yytext); return REAL;}
-"[a-zA-Z0-9_\s\n]*" {yylval.strval = strdup(yytext); return STRING;}
-[a-zA-z][a-zA-z0-9_]* {yylval.strval = strdup(yytext); return VAR;} 
-/* add pointers */
+true {return TRUE;}
+false {return FALSE;}
+\'.\'       {
+    yylval = mknode1(yytext);
+    if(print) printf("CHAR_VALUE\n");
+    return CHAR_VALUE;
+    }
+(-)?[1-9]+[0-9]* {yylval.intval = atoi(yytext); return INT_VAL;}
+(0x|0X)[0-9A-F]+ {yylval.strval = strdup(yytext); return HEX_VAL;}
+\.[0-9]* | \.[1-9][0-9]*([eE][+-]?[0-9]+)? | \.[0-9]+([eE][+-]?[0-9]+)? {yylval.strval = strdup(yytext); return FLOAT_VAL;}
+\".*\"      {
+    int len = 0, i = 0;
+    while(yytext[len]!='\0'){    
+        len++;
+    }
+    while(yytext[i]!='\0'){
+        if(yytext[i] == '"' && i != 0 && i != len-1)
+            return 0;
+        i++;
+    }
+    return STRING_VAL;
+}
+[a-zA-z][a-zA-z0-9_]* {yylval.strval = strdup(yytext); return ID;} 
 /* ================================= */
 /* ===========Other Lexemes========= */
-/* {return START_COMM;}
-*/ {return END_COMM;}
+"/*"([^*]*|(\*+[^/]))*"*/" {return COMMENT;}
 ; {return SEMI;}   
 , {return COMMA;}
 { {return LEFT_BRACE;}  
