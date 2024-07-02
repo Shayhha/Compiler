@@ -1259,7 +1259,7 @@ yyreduce:
     {
   case 2: /* if_st: IF '(' EXPR ')'  */
 #line 28 "Comp.y"
-                        {(yyval.nodeval) = mknode("if", (yyvsp[-1].nodeval), NULL); printtree((yyval.nodeval));}
+                        {(yyval.nodeval) = mknode("if", (yyvsp[-1].nodeval), NULL); printtree((yyval.nodeval), 0);}
 #line 1264 "y.tab.c"
     break;
 

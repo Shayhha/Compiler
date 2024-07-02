@@ -25,7 +25,7 @@
 %type<nodeval> if_st EXPR
 %%
 
-if_st : IF '(' EXPR ')' {$$ = mknode("if", $3, NULL); printtree($$);};
+if_st : IF '(' EXPR ')' {$$ = mknode("if", $3, NULL); printtree($$, 0);};
 EXPR : TRUE_VAL {$$ = mknode("true", NULL, NULL);} | FALSE_VAL {$$ = mknode("false", NULL, NULL);};
 
 %%

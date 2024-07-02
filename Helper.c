@@ -18,9 +18,20 @@ node* mknode(char* token, node* left, node* right) {
     return newnode;
 }
 
-void printtree(node* tree) {
-    printf("%s\n", tree->token);
-    if (tree->left) printtree(tree->left);
-    if (tree->right) printtree(tree->right);
+void printtree(node* node, int indent) {
+    // Base case: if node is NULL, just return
+    if (node == NULL) {
+        return;
+    }
+
+    // Print current node with indentation
+    for (int i = 0; i < indent; i++) {
+        printf("\t");
+    }
+    printf("%s\n", node->token);
+
+    // Recursively print left and right children with increased indentation
+    printtree(node->left, indent + 1);
+    printtree(node->right, indent + 1);
 }
 
