@@ -35,3 +35,18 @@ void printtree(node* node, int indent) {
     printtree(node->right, indent + 1);
 }
 
+
+// char* intToString(int value) {
+//     int counter = 0;
+//     char* returnValue = NULL;
+
+//     while(value != 0) {
+//         value = value%10;
+//         counter++;
+//         returnValue = (char*)realloc(sizeof(int), sizeof(int)*counter);
+//     }
+
+//     sprintf(returnValue, "%d", value);
+
+//     return returnValue;
+// }

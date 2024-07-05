@@ -1,0 +1,51 @@
+ass_st_2 : expr_st ';' {$$ = mknode($1, NULL, NULL);}
+            | ID ';' {$$ = mknode($1, NULL, NULL);}
+            | '&' ptr_value ';' {($2, NULL, NULL);}
+            | CHAR_VAL ';' {$$ = mknode($1, NULL, NULL);}
+            | STRING_VAL ';'{$$ = mknode($1, NULL, NULL);};
+
+expr_st : value ADD value {$$ = mknode("+", $1, $3);}
+          | value SUB value {$$ = mknode("-", $1, $3);}
+          | value MULT value {$$ = mknode("*", $1, $3);}
+          | value DIVIDE value {$$ = mknode("/", $1, $3);}
+          | value {$$ = mknode($1, NULL, NULL);};
+value : INT_VAL {$$ = mknode("int_val", NULL, NULL);}
+        | FLOAT_VAL {$$ = mknode("float_val", NULL, NULL);}
+        | DOUBLE_VAL {$$ = mknode("double_val", NULL, NULL);}
+        | ID {$$ = mknode("id", NULL, NULL);};
+ptr_value : INT_PTR {$$ = mknode("int_ptr", NULL, NULL);} 
+            | FLOAT_PTR {$$ = mknode("float_ptr", NULL, NULL);} 
+            | DOUBLE_PTR {$$ = mknode("double_ptr", NULL, NULL);}
+            | CHAR_PTR {$$ = mknode("char_ptr", NULL, NULL);}
+            | ID {$$ = mknode("id_ptr", NULL, NULL);};
+
+              
+
+EXPR
+EXPR : TRUE_VAL {$$ = mknode("true", NULL, NULL);} | FALSE_VAL {$$ = mknode("false", NULL, NULL);};
+
+
+if_st : IF '(' STRING_VAL ')' {$$ = mknode("if", mknode($3,NULL,NULL), NULL); printtree($$, 0);};
+
+
+ass_st_2 : ID ';' {$$ = mknode($1, NULL, NULL);}
+            | FLOAT_VAL ';' {$$ = mknode($1, NULL, NULL);}
+            | DOUBLE_VAL ';' {$$ = mknode($1, NULL, NULL);}
+            | INT_VAL ';' {$$ = mknode($1, NULL, NULL);}
+            | CHAR_VAL ';' {$$ = mknode($1, NULL, NULL);}
+            | STRING_VAL ';'{$$ = mknode($1, NULL, NULL);};
+
+
+
+
+
+
+
+
+
+block : statement {$$ = $1;} 
+        | '{' statement_recursive '}' {$$ = mknode("block", $2,NULL);};
+
+statement_recursive : statement statement_recursive | statement;
+
+else_statement : ELSE block {$$ = $2;};

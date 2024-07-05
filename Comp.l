@@ -3,18 +3,18 @@
 %}
 %%
 
-"bool" {yylval.nodeval = mknode("BOOL",NULL,NULL); return BOOL;}
-"char" {yylval.nodeval = mknode("CHAR",NULL,NULL); return CHAR;}
-"int" {yylval.nodeval = mknode("INT",NULL,NULL); return INT;}
-"double" {yylval.nodeval = mknode("DOUBLE",NULL,NULL); return DOUBLE;}
-"float" {yylval.nodeval = mknode("FLOAT",NULL,NULL); return FLOAT;}
-"string" {yylval.nodeval = mknode("STRING",NULL,NULL); return STRING;}
-"int*" {yylval.nodeval = mknode("INT_PTR",NULL,NULL); return INT_PTR;}
-"char*" {yylval.nodeval = mknode("CHAR_PTR",NULL,NULL); return CHAR_PTR;}
-"double*" {yylval.nodeval = mknode("DOUBLE_PTR",NULL,NULL); return DOUBLE_PTR;}
-"float*" {yylval.nodeval = mknode("FLOAT_PTR",NULL,NULL); return FLOAT_PTR;}
-"if" {yylval.strval = strdup(yytext); return IF;}
-"else" {yylval.strval = strdup(yytext); return ELSE;}
+"bool" {yylval.strval = strdup("bool"); return BOOL;}
+"char" {yylval.strval = strdup("char"); return CHAR;}
+"int" {yylval.strval = strdup("int"); return INT;}
+"double" {yylval.strval = strdup("double"); return DOUBLE;}
+"float" {yylval.strval = strdup("float"); return FLOAT;}
+"string" {yylval.strval = strdup("string"); return STRING;}
+"int*" {yylval.strval = strdup("int*"); return INT_PTR;}
+"char*" {yylval.strval = strdup("char*"); return CHAR_PTR;}
+"double*" {yylval.strval = strdup("double*"); return DOUBLE_PTR;}
+"float*" {yylval.strval = strdup("float*"); return FLOAT_PTR;}
+"if" {yylval.nodeval = mknode("IF",NULL,NULL); return IF;}
+"else" {yylval.nodeval = mknode("ELSE",NULL,NULL); return ELSE;}
 "while" {yylval.nodeval = mknode("WHILE",NULL,NULL); return WHILE;}
 "for" {yylval.nodeval = mknode("FOR",NULL,NULL); return FOR;}
 "var" {yylval.nodeval = mknode("VAR",NULL,NULL); return VAR;}
@@ -27,10 +27,12 @@
 "void" {yylval.nodeval = mknode("VOID",NULL,NULL); return VOID;}
 "do" {yylval.nodeval = mknode("DO",NULL,NULL); return DO;}
 
+"true" {yylval.nodeval = mknode("TRUE",NULL,NULL); return TRUE_VAL;}
+"false" {yylval.nodeval = mknode("FALSE",NULL,NULL); return FALSE_VAL;}
 
 "&&" {return AND;}
 \/ {return DIVIDE;}
-"<-" {return ASSIGN;}
+"<-" {return ASSIGN;} 
 "==" {return EQUAL;}
 \> {return GREATER;}
 ">=" {return GREATER_EQ;}
@@ -44,16 +46,18 @@
 \* {return MULT;}
 \& {return ADDRESS;}
 
-
-"true" {yylval.strval = strdup(yytext); return TRUE_VAL;}
-"false" {yylval.strval = strdup(yytext); return FALSE_VAL;}
-
-\'.\' { yylval.charval = yytext[0]; return CHAR_VALUE; }
-(-)?[1-9]+[0-9]* {yylval.intval = atoi(yytext); return INT_VAL;}
-(0x|0X)[0-9A-F]+ {yylval.strval = strdup(yytext); return HEX_VAL;}
-\.[0-9]* | \.[1-9][0-9]*([eE][+-]?[0-9]+)? | \.[0-9]+([eE][+-]?[0-9]+)? {yylval.floatval = atoi(yytext); return FLOAT_VAL;}
 [a-zA-Z][a-zA-Z0-9]* {yylval.strval = strdup(yytext); return ID;} 
-"/*"([^*]*|(\*+[^/]))*"*/" {return COMMENT;}
+
+(0x|0X)[0-9A-F]+ {yylval.strval = strdup(yytext); return HEX_VAL;}
+
+[0-9]+\.[0-9]+f|[0-9]+f {yylval.strval = strdup(yytext); return FLOAT_VAL;}
+
+(-)?[1-9]+[0-9]* {yylval.strval = strdup(yytext); return INT_VAL;}
+
+\.[0-9]*|\.[1-9][0-9]*([eE][+-]?[0-9]+)?|\.[0-9]+([eE][+-]?[0-9]+)? {yylval.strval = strdup(yytext); return DOUBLE_VAL;}
+
+"/*"([^*]*|(\*+[^/]))*"*/" {yylval.nodeval = mknode("COMMENT",NULL,NULL); return COMMENT;}
+
 \".*\" {
     int len = 0, i = 0;
     while(yytext[len] != '\0') { len++; }
@@ -66,6 +70,10 @@
     yylval.strval = strdup(yytext);
     return STRING_VAL;
 }
-[ \t] {printf("");}
+
+\'.\' { yylval.strval = strdup(yytext); return CHAR_VAL; }
+
+[ \t]+ ;
+
 . {return yytext[0];}
 %%
