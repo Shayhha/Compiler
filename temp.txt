@@ -49,3 +49,62 @@ block : statement {$$ = $1;}
 statement_recursive : statement statement_recursive | statement;
 
 else_statement : ELSE block {$$ = $2;};
+
+
+
+
+
+
+
+
+
+if_statement: matched_if_statement {$$ = mknode("matched-if", $1, NULL); printtree($$, 0);} | unmatched_if_statement {$$ = mknode("unmatched-if", $1, NULL); printtree($$, 0);}
+
+matched_if_statement : IF '(' math_expression ')' matched_if_statement ELSE matched_if_statement {$$ = mknode("if", $3, mknode("if & else", $5,$7));} | statement {$$ = mknode("statement", $1, NULL);}
+
+unmatched_if_statement : IF '(' math_expression ')' if_statement {$$ = mknode("if", $3, $5);} | IF '(' math_expression ')' matched_if_statement ELSE unmatched_if_statement {$$ = mknode("if", $3, mknode("if & else", $5,$7));}
+
+
+
+if (x==3||x<5) {x<-34;y<-7;} else {y<-12;}
+
+
+for(int i <- 0;i<5;i+1) {
+    i<-4;
+    /*lmao*/
+    5*6;
+}
+for_statement : FOR '(' assign_statement ';' condition ';' math_expression ')' block 
+                        {$$ = mknode("for", mknode("assign_statement", $3, mknode("condition", $5, mknode("math_expression", $7, NULL))), mknode("for_block", $9, NULL));};
+
+
+
+
+
+
+
+
+var_assignment : VAR var_list ';' {$$ = mknode("new var", $2, NULL);}
+
+var_list : param_type ':' temp {$$ = mknode("new var", $1, $3);}
+           | var_list {$$ = $1;}
+
+temp :  ID ',' temp  {$$ = mknode($1, $3, NULL);}
+        | assign_statement ',' temp {$$ = mknode("assignment", $1, $3);}
+        | assign_statement {$$ = mknode("assignment", $1, NULL);}
+        | ID {$$ = mknode($1, NULL, NULL);}
+
+
+
+
+assign_statement : param_type ID ASSIGN expression ';' {$$ = mknode($1, mknode($2, NULL, NULL), $4);}
+                     | ID ASSIGN expression ';' {$$ = mknode("assign", mknode($1, NULL, NULL), $3);};
+
+
+
+!!!works without assignments:
+
+var_assignment : VAR param_type ':' many_id ';' {$$ = mknode("new var", $2, $4);}            
+
+many_id : ID ',' many_id {$$ = mknode($1, $3, NULL);} 
+          | ID {$$ = mknode($1, NULL, NULL);};

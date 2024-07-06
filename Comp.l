@@ -31,19 +31,19 @@
 "false" {yylval.nodeval = mknode("FALSE",NULL,NULL); return FALSE_VAL;}
 
 "&&" {return AND;}
-\/ {return DIVIDE;}
 "<-" {return ASSIGN;} 
 "==" {return EQUAL;}
 \> {return GREATER;}
 ">=" {return GREATER_EQ;}
 \< {return LESSER;}
 "<=" {return LESSER_EQ;}
-\- {return SUB;}
 \! {return NOT;}
 "!=" {return NOT_EQ;}
 "||" {return OR;}
 \+ {return ADD;}
+\- {return SUB;}
 \* {return MULT;}
+\/ {return DIVIDE;}
 \& {return ADDRESS;}
 
 [a-zA-Z][a-zA-Z0-9]* {yylval.strval = strdup(yytext); return ID;} 
@@ -52,11 +52,11 @@
 
 [0-9]+\.[0-9]+f|[0-9]+f {yylval.strval = strdup(yytext); return FLOAT_VAL;}
 
-(-)?[1-9]+[0-9]* {yylval.strval = strdup(yytext); return INT_VAL;}
+(-)?[1-9]+[0-9]*|0 {yylval.strval = strdup(yytext); return INT_VAL;}
 
 \.[0-9]*|\.[1-9][0-9]*([eE][+-]?[0-9]+)?|\.[0-9]+([eE][+-]?[0-9]+)? {yylval.strval = strdup(yytext); return DOUBLE_VAL;}
 
-"/*"([^*]*|(\*+[^/]))*"*/" {yylval.nodeval = mknode("COMMENT",NULL,NULL); return COMMENT;}
+"/*"([^*]*|(\*+[^/]))*"*/" {yylval.nodeval = mknode("COMMENT",mknode(yytext,NULL,NULL),NULL); return COMMENT;}
 
 \".*\" {
     int len = 0, i = 0;
@@ -73,7 +73,7 @@
 
 \'.\' { yylval.strval = strdup(yytext); return CHAR_VAL; }
 
-[ \t]+ ;
+[ \t\n]+ ;
 
 . {return yytext[0];}
 %%
