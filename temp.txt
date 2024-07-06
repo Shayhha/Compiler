@@ -83,7 +83,6 @@ for_statement : FOR '(' assign_statement ';' condition ';' math_expression ')' b
 
 
 
-
 var_assignment : VAR var_list ';' {$$ = mknode("new var", $2, NULL);}
 
 var_list : param_type ':' temp {$$ = mknode("new var", $1, $3);}
@@ -108,3 +107,13 @@ var_assignment : VAR param_type ':' many_id ';' {$$ = mknode("new var", $2, $4);
 
 many_id : ID ',' many_id {$$ = mknode($1, $3, NULL);} 
           | ID {$$ = mknode($1, NULL, NULL);};
+
+
+
+
+
+ID '[' INT_VAL ']' string_assign_statement ',' many_string 
+                {$$ = mknode("list", mknode("!!", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), mknode("value", $5, NULL)), $7);}
+             | ID '[' INT_VAL ']' string_assign_statement 
+                {$$ = mknode("string", mknode("!!", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), $5), NULL);};
+             | 
