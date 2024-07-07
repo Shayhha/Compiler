@@ -66,6 +66,7 @@ function_static : ':' STATIC {$$ = mknode(":", $2, NULL);}
 function_block : '{' statement_recursive function_return '}' {$$ = mknode("func block", $2, $3);}
                 | '{' statement_recursive '}' {$$ = mknode("func block", $2, NULL);}
                 | '{' function_return '}' {$$ = mknode("func block", $2, NULL);};
+                | '{' '}' {$$ = NULL;};
 
 function_return : RETURN expression ';' {$$ = mknode("RETURN", $2, NULL);};
 
