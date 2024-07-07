@@ -548,8 +548,8 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "Comp.l"
-#line 2 "Comp.l"
+#line 1 "Comp.lex"
+#line 2 "Comp.lex"
     #include <stdio.h>
 #line 555 "lex.yy.c"
 #line 556 "lex.yy.c"
@@ -769,7 +769,7 @@ YY_DECL
 		}
 
 	{
-#line 4 "Comp.l"
+#line 4 "Comp.lex"
 
 
 #line 776 "lex.yy.c"
@@ -831,238 +831,238 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 6 "Comp.l"
+#line 6 "Comp.lex"
 {yylval.strval = strdup("bool"); return BOOL;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 7 "Comp.l"
+#line 7 "Comp.lex"
 {yylval.strval = strdup("char"); return CHAR;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 8 "Comp.l"
+#line 8 "Comp.lex"
 {yylval.strval = strdup("int"); return INT;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 9 "Comp.l"
+#line 9 "Comp.lex"
 {yylval.strval = strdup("double"); return DOUBLE;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 10 "Comp.l"
+#line 10 "Comp.lex"
 {yylval.strval = strdup("float"); return FLOAT;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 11 "Comp.l"
+#line 11 "Comp.lex"
 {yylval.strval = strdup("string"); return STRING;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 12 "Comp.l"
+#line 12 "Comp.lex"
 {yylval.strval = strdup("int*"); return INT_PTR;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 13 "Comp.l"
+#line 13 "Comp.lex"
 {yylval.strval = strdup("char*"); return CHAR_PTR;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 14 "Comp.l"
+#line 14 "Comp.lex"
 {yylval.strval = strdup("double*"); return DOUBLE_PTR;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 15 "Comp.l"
+#line 15 "Comp.lex"
 {yylval.strval = strdup("float*"); return FLOAT_PTR;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 16 "Comp.l"
+#line 16 "Comp.lex"
 {yylval.nodeval = mknode("IF",NULL,NULL); return IF;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 17 "Comp.l"
+#line 17 "Comp.lex"
 {yylval.nodeval = mknode("ELSE",NULL,NULL); return ELSE;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 18 "Comp.l"
+#line 18 "Comp.lex"
 {yylval.nodeval = mknode("WHILE",NULL,NULL); return WHILE;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 19 "Comp.l"
+#line 19 "Comp.lex"
 {yylval.nodeval = mknode("FOR",NULL,NULL); return FOR;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 20 "Comp.l"
+#line 20 "Comp.lex"
 {yylval.nodeval = mknode("VAR",NULL,NULL); return VAR;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 21 "Comp.l"
+#line 21 "Comp.lex"
 {yylval.nodeval = mknode("ARGS",NULL,NULL); return ARGS;}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 22 "Comp.l"
+#line 22 "Comp.lex"
 {yylval.nodeval = mknode("PUBLIC",NULL,NULL); return PUBLIC;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 23 "Comp.l"
+#line 23 "Comp.lex"
 {yylval.nodeval = mknode("PRIVATE",NULL,NULL); return PRIVATE;}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 24 "Comp.l"
+#line 24 "Comp.lex"
 {yylval.nodeval = mknode("STATIC",NULL,NULL); return STATIC;}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 25 "Comp.l"
+#line 25 "Comp.lex"
 {yylval.nodeval = mknode("RETURN",NULL,NULL); return RETURN;}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 26 "Comp.l"
+#line 26 "Comp.lex"
 {yylval.nodeval = mknode("NULL",NULL,NULL); return NULL_VALUE;}
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 27 "Comp.l"
+#line 27 "Comp.lex"
 {yylval.nodeval = mknode("VOID",NULL,NULL); return VOID;}
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 28 "Comp.l"
+#line 28 "Comp.lex"
 {yylval.nodeval = mknode("DO",NULL,NULL); return DO;}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 30 "Comp.l"
+#line 30 "Comp.lex"
 {yylval.nodeval = mknode("TRUE",NULL,NULL); return TRUE_VAL;}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 31 "Comp.l"
+#line 31 "Comp.lex"
 {yylval.nodeval = mknode("FALSE",NULL,NULL); return FALSE_VAL;}
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 33 "Comp.l"
+#line 33 "Comp.lex"
 {return AND;}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 34 "Comp.l"
+#line 34 "Comp.lex"
 {return ASSIGN;} 
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 35 "Comp.l"
+#line 35 "Comp.lex"
 {return EQUAL;}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 36 "Comp.l"
+#line 36 "Comp.lex"
 {return GREATER;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 37 "Comp.l"
+#line 37 "Comp.lex"
 {return GREATER_EQ;}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 38 "Comp.l"
+#line 38 "Comp.lex"
 {return LESSER;}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 39 "Comp.l"
+#line 39 "Comp.lex"
 {return LESSER_EQ;}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 40 "Comp.l"
+#line 40 "Comp.lex"
 {return NOT;}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 41 "Comp.l"
+#line 41 "Comp.lex"
 {return NOT_EQ;}
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 42 "Comp.l"
+#line 42 "Comp.lex"
 {return OR;}
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 43 "Comp.l"
+#line 43 "Comp.lex"
 {return ADD;}
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 44 "Comp.l"
+#line 44 "Comp.lex"
 {return SUB;}
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 45 "Comp.l"
+#line 45 "Comp.lex"
 {return MULT;}
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 46 "Comp.l"
+#line 46 "Comp.lex"
 {return DIVIDE;}
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 47 "Comp.l"
+#line 47 "Comp.lex"
 {return ADDRESS;}
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 49 "Comp.l"
+#line 49 "Comp.lex"
 {yylval.strval = strdup(yytext); return ID;} 
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 51 "Comp.l"
+#line 51 "Comp.lex"
 {yylval.strval = strdup(yytext); return HEX_VAL;}
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 53 "Comp.l"
+#line 53 "Comp.lex"
 {yylval.strval = strdup(yytext); return FLOAT_VAL;}
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 55 "Comp.l"
+#line 55 "Comp.lex"
 {yylval.strval = strdup(yytext); return INT_VAL;}
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 57 "Comp.l"
+#line 57 "Comp.lex"
 {yylval.strval = strdup(yytext); return DOUBLE_VAL;}
 	YY_BREAK
 case 46:
 /* rule 46 can match eol */
 YY_RULE_SETUP
-#line 59 "Comp.l"
+#line 59 "Comp.lex"
 {yylval.nodeval = mknode("COMMENT",mknode(yytext,NULL,NULL),NULL); return COMMENT;}
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 61 "Comp.l"
+#line 61 "Comp.lex"
 {
     int len = 0, i = 0;
     while(yytext[len] != '\0') { len++; }
@@ -1078,23 +1078,23 @@ YY_RULE_SETUP
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 74 "Comp.l"
+#line 74 "Comp.lex"
 { yylval.strval = strdup(yytext); return CHAR_VAL; }
 	YY_BREAK
 case 49:
 /* rule 49 can match eol */
 YY_RULE_SETUP
-#line 76 "Comp.l"
+#line 76 "Comp.lex"
 ;
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 78 "Comp.l"
+#line 78 "Comp.lex"
 {return yytext[0];}
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 79 "Comp.l"
+#line 79 "Comp.lex"
 ECHO;
 	YY_BREAK
 #line 1101 "lex.yy.c"
@@ -2102,6 +2102,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 79 "Comp.l"
+#line 79 "Comp.lex"
 
 

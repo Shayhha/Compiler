@@ -1,9 +1,13 @@
 public int foo(args>> int: i, j, k): static
 {
-var double: max, min;
-private bool fee(args>> int: l, m, n; float: x, y)
-{
-return true;
-}
-return 0;
+    var double: max, min;
+    for (var int: i<-0; i<=111; i*3) {
+        if (x == 'c') {
+            x<-'g';
+        }
+        else {
+            var int: a,v,b,f;
+            g<-112;
+        }
+    }
 }
