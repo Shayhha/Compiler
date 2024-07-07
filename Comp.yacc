@@ -50,6 +50,7 @@ function_type : PRIVATE {$$ = $1;}
 
 function_return_type : param_type {$$ = $1;}
                         | STRING {$$ = mknode($1, NULL, NULL);}
+                        | VOID {$$ = mknode($1, NULL, NULL);}
 
 function_args : ARGS func_args_decleration {$$ = mknode("args>>", $2, NULL);} 
 
