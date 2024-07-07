@@ -1,1 +1,9 @@
-string x[34] <- "abc" , y[12] <- "lol" ;
+public int foo(args>> int: i, j, k): static
+{
+var double: max, min;
+private bool fee(args>> int: l, m, n; float: x, y)
+{
+return true;
+}
+return 0;
+}
