@@ -30,14 +30,15 @@
 %nonassoc non_else
 %nonassoc ELSE
 
-%type<nodeval> assign_statement function_call update function_params for_init_many for_init expression value for_statement function_return function_block function_static func_many_id func_args_decleration function_args function_return_type function_type function if_statement else_statement block statement_recursive statement program  while_statement do_while_statement var_assignment many_id param_type string_assignment many_string 
+%type<nodeval> assign_statement functions function_call update function_params for_init_many for_init expression value for_statement function_return function_block function_static func_many_id func_args_decleration function_args function_return_type function_type function if_statement else_statement block statement_recursive statement program  while_statement do_while_statement var_assignment many_id param_type string_assignment many_string 
 %%
 
 
-program : value {$$ = $1; printtree($$, 0);};
+program : functions {$$ = $1; printtree($$, 0);};
 
 
-
+functions : function functions {$$ = mknode("Functions:", $1, $2);}
+        | function {$$ = $1;};
 
 function : function_type function_return_type ID '(' function_args ')' function_static function_block 
             {$$ = mknode("Function", $1, mknode("return type", $2, mknode("name", mknode($3, NULL, NULL), mknode("args", $5, mknode("static", $7, mknode("func block", $8, NULL))))));}
