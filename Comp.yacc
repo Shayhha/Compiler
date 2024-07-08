@@ -15,8 +15,8 @@
 
 %debug
 
-%token<strval> CHAR INT DOUBLE FLOAT STRING INT_PTR CHAR_PTR DOUBLE_PTR FLOAT_PTR BOOL FOR  
-%token<nodeval> IF ELSE VAR ARGS PUBLIC PRIVATE STATIC RETURN NULL_VALUE VOID COMMENT DO WHILE
+%token<strval> CHAR INT DOUBLE FLOAT STRING INT_PTR CHAR_PTR DOUBLE_PTR FLOAT_PTR BOOL   
+%token<nodeval> IF ELSE VAR ARGS PUBLIC PRIVATE STATIC RETURN NULL_VALUE VOID COMMENT DO WHILE FOR
 %token<nodeval> ADD SUB MULT DIVIDE ASSIGN EQUAL GREATER GREATER_EQ LESSER LESSER_EQ NOT NOT_EQ AND OR ADDRESS
 %token<nodeval> TRUE_VAL FALSE_VAL 
 %token<strval> HEX_VAL STRING_VAL ID CHAR_VAL INT_VAL FLOAT_VAL DOUBLE_VAL 
@@ -30,11 +30,11 @@
 %nonassoc non_else
 %nonassoc ELSE
 
-%type<nodeval> assign_statement expression value for_statement function_return function_block function_static func_many_id func_args_decleration function_args function_return_type function_type function if_statement else_statement block statement_recursive statement program  while_statement do_while_statement var_assignment many_id param_type string_assignment many_string 
+%type<nodeval> assign_statement function_call update function_params for_init_many for_init expression value for_statement function_return function_block function_static func_many_id func_args_decleration function_args function_return_type function_type function if_statement else_statement block statement_recursive statement program  while_statement do_while_statement var_assignment many_id param_type string_assignment many_string 
 %%
 
 
-program : function {$$ = $1; printtree($$, 0);};
+program : string_assignment {$$ = $1; printtree($$, 0);};
 
 
 
@@ -57,6 +57,9 @@ function_args : ARGS func_args_decleration {$$ = mknode("args>>", $2, NULL);}
 
 func_args_decleration : param_type ':' func_many_id ';' func_args_decleration {$$ = mknode("new vars", mknode("params", $1, $3), $5);} 
                         | param_type ':' func_many_id {$$ = mknode("new var", $1, $3);}
+                        | STRING ':' func_many_id ';' func_args_decleration {$$ = mknode("string", mknode("params", $3, NULL), $5);} 
+                        | STRING ':' func_many_id {$$ = mknode("string", $3, NULL);}
+
 
 func_many_id : ID ',' func_many_id {$$ = mknode($1, $3, NULL);}
                 | ID {$$ = mknode($1, NULL, NULL);};
@@ -73,12 +76,43 @@ function_return : RETURN expression ';' {$$ = mknode("RETURN", $2, NULL);};
 
 
 
+function_call : ID '(' function_params ')' {$$ = mknode($1, $3, NULL);}
+                | ID '(' ')' {$$ = mknode($1, NULL, NULL);}
+
+function_params : expression ',' function_params {$$ = mknode("", $1, $3);}
+                | expression {$$ = $1;}
+                
+
+
+
+
+
+
 do_while_statement : DO block WHILE '(' expression ')' ';' {$$ = mknode("do_while_statement", $2, $5);};
 
 while_statement : WHILE '(' expression ')' block {$$ = mknode("while_statement", $3, $5);};
 
-for_statement : FOR '(' var_assignment expression ';' expression ')' block 
-                        {$$ = mknode("for", mknode("var_assignment", $3, mknode("expression", $4, mknode("expression", $6, NULL))), mknode("for_block", $8, NULL));};
+for_statement : FOR '(' for_init ';' update ';' update ')' block 
+                        {$$ = mknode("for", mknode("var_assignment", $3, mknode("expression", $5, mknode("expression", $7, NULL))), mknode("for_block", $9, NULL));};
+                | FOR '(' for_init ';' update ';' ')' block 
+                        {$$ = mknode("for", mknode("var_assignment", $3, mknode("expression", $5, NULL)), mknode("for_block", $8, NULL));};
+                | FOR '(' ';' update ';' update ')' block 
+                        {$$ = mknode("for", mknode("expression", $4, mknode("update", $6, NULL)), mknode("for_block", $8, NULL));};
+                | FOR '(' ';' update ';' ')' block 
+                        {$$ = mknode("for", mknode("expression", $4, NULL), mknode("for_block", $7, NULL));};
+
+
+
+for_init : VAR param_type ':' for_init_many {$$ = mknode("new var", $2, $4);}
+            | MULT ID ASSIGN expression {$$ = mknode("ptr assign", mknode($2, $4, NULL), NULL);}
+            | for_init_many {$$ = $1;};
+
+for_init_many : ID assign_statement ',' for_init_many {$$ = mknode($1, $2, $4);}
+          | ID ',' for_init_many {$$ = mknode($1, $3, NULL);}
+          | ID assign_statement {$$ = mknode($1, $2, NULL);};
+
+update : expression ',' update {$$ = mknode("", $1, $3);}
+        | expression {$$ = $1;} ;
 
 
 
@@ -105,36 +139,35 @@ statement : var_assignment {$$ = $1;}
                 | do_while_statement {$$ = $1;} 
                 | function {$$ = $1;}
                 | COMMENT {$$ = $1;} 
+                | expression ';' {$$ = $1;}
+                
 
-
-
+                    
 
 string_assignment : STRING many_string ';' {$$ = mknode("new string", $2, NULL);}
-                        | ID assign_statement ';' {$$ = mknode("assign string", mknode($1, NULL, NULL), $2);}
-                        | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("assign string index", mknode("id", mknode($1, NULL, NULL), $3), mknode("assign", mknode($6, NULL, NULL), NULL));}             
+                    | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("assign string index", mknode("id", mknode($1, NULL, NULL), $3), mknode("assign", mknode($6, NULL, NULL), NULL));}             
                         
-many_string : ID '[' INT_VAL ']' assign_statement 
+many_string : ID '[' INT_VAL ']' assign_statement ',' many_string 
+                {$$ = mknode("list1", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), mknode("value", $5, $7));}
+            | ID '[' INT_VAL ']' assign_statement 
                 {$$ = mknode("string2", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), $5);}
-            | ID '[' INT_VAL ']'
-                {$$ = mknode("string1", mknode($1, NULL, NULL), mknode($3, NULL, NULL));}
-            | ID '[' INT_VAL ']' assign_statement ',' many_string 
-                {$$ = mknode("list1", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), mknode("value", $5, $7));};
             | ID '[' INT_VAL ']' ',' many_string
                 {$$ = mknode("list2", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), $6);}
-
-
+            | ID '[' INT_VAL ']'
+                {$$ = mknode("string1", mknode($1, NULL, NULL), mknode($3, NULL, NULL));};
+             
 
 
 var_assignment : VAR param_type ':' many_id ';' {$$ = mknode("new var", $2, $4);}
-                 | ID ASSIGN expression ';' {$$ = mknode("assign", mknode($1, $3, NULL), NULL);}            
-                 | MULT ID ASSIGN expression ';' {$$ = mknode("ptr assign", mknode($2, $4, NULL), NULL);};      
+                 | ID assign_statement ';' {$$ = mknode("assign", mknode($1, NULL, NULL), $2);}            
+                 | MULT ID assign_statement ';' {$$ = mknode("ptr assign", mknode($2, NULL, NULL), $3);};      
 
 many_id : ID assign_statement ',' many_id {$$ = mknode($1, $2, $4);}
           | ID ',' many_id {$$ = mknode($1, $3, NULL);}
           | ID assign_statement {$$ = mknode($1, $2, NULL);}
           | ID {$$ = mknode($1, NULL, NULL);};
 
-assign_statement : ASSIGN expression {$$ = mknode("assign", $2, NULL);};
+assign_statement : ASSIGN expression {$$ = $2;};
 
 
 
@@ -152,35 +185,46 @@ param_type : INT {$$ = mknode($1,NULL,NULL);}
 expression : NULL_VALUE {$$ = $1;}
             | ADDRESS ID {$$ = mknode("&", mknode($2,NULL,NULL), NULL);}
             | MULT ID {$$ = mknode("*", mknode($2,NULL,NULL), NULL);}
-            | value LESSER value {$$ = mknode("<", $1, $3);}
-            | value LESSER_EQ value {$$ = mknode("<=", $1, $3);}
-            | value GREATER value {$$ = mknode(">", $1, $3);}
-            | value GREATER_EQ value {$$ = mknode(">=", $1, $3);}
-            | value EQUAL value {$$ = mknode("==", $1, $3);}
-            | value NOT_EQ value {$$ = mknode("!=", $1, $3);}
-            | NOT value {$$ = mknode("! (not)", $2, NULL);}
-            | value {$$ = $1;}
-            | '(' expression ')' {$$ = mknode("( )", $2, NULL);}
+            | NOT expression {$$ = mknode("! (not)", $2, NULL);}
+            | expression LESSER expression {$$ = mknode("<", $1, $3);}
+            | expression LESSER_EQ expression {$$ = mknode("<=", $1, $3);}
+            | expression GREATER expression {$$ = mknode(">", $1, $3);}
+            | expression GREATER_EQ expression {$$ = mknode(">=", $1, $3);}
+            | expression EQUAL expression {$$ = mknode("==", $1, $3);}
+            | expression NOT_EQ expression {$$ = mknode("!=", $1, $3);}
             | expression OR expression {$$ = mknode("||", $1, $3);}
             | expression AND expression {$$ = mknode("&&", $1, $3);}
-            | value ADD value {$$ = mknode("+", $1, $3);}
-            | value SUB value {$$ = mknode("-", $1, $3);}
-            | value MULT value {$$ = mknode("*", $1, $3);}
-            | value DIVIDE value {$$ = mknode("/", $1, $3);}
-            | '|' value '|' {$$ = mknode("length of array", $2, NULL);};
+            | expression ADD expression {$$ = mknode("+", $1, $3);}
+            | expression SUB expression {$$ = mknode("value - value", $1, $3);}
+            | expression MULT expression {$$ = mknode("*", $1, $3);}
+            | expression DIVIDE expression {$$ = mknode("/", $1, $3);}
+            | '(' expression ')' {$$ = mknode("( )", $2, NULL);}
+            | '|' expression '|' {$$ = mknode("length of array", $2, NULL);}
+            | value {$$ = $1;}
+            | function_call {$$ = $1;}
+         
 
+           
 value : INT_VAL {$$ = mknode($1, NULL, NULL);}
         | FLOAT_VAL {$$ = mknode($1, NULL, NULL);}
         | DOUBLE_VAL {$$ = mknode($1, NULL, NULL);}
+        | SUB INT_VAL {$$ = mknode("-", mknode($2, NULL, NULL), NULL);}
+        | SUB FLOAT_VAL {$$ = mknode("-", mknode($2, NULL, NULL), NULL);}
+        | SUB DOUBLE_VAL {$$ = mknode("-", mknode($2, NULL, NULL), NULL);}
+        | ADD INT_VAL {$$ = mknode("+", mknode($2, NULL, NULL), NULL);}
+        | ADD FLOAT_VAL {$$ = mknode("+", mknode($2, NULL, NULL), NULL);}
+        | ADD DOUBLE_VAL {$$ = mknode("+", mknode($2, NULL, NULL), NULL);}
         | ID {$$ = mknode($1, NULL, NULL);}
         | TRUE_VAL {$$ = $1;}
         | FALSE_VAL {$$ = $1;}
         | CHAR_VAL {$$ = mknode($1, NULL, NULL);}
-        | STRING_VAL {$$ = mknode($1, NULL, NULL);};
+        | STRING_VAL {$$ = mknode($1, NULL, NULL);}
+        | HEX_VAL {$$ = mknode($1, NULL, NULL);};
+
 %%
 #include "lex.yy.c"
 int main() {
-        //yydebug = 1;  // Enable debugging output
+        yydebug = 1;  // Enable debugging output
         return yyparse();
 }
 int yyerror(const char* error){

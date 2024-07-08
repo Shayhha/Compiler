@@ -52,9 +52,9 @@
 
 [0-9]+\.[0-9]+f|[0-9]+f {yylval.strval = strdup(yytext); return FLOAT_VAL;}
 
-(-)?[1-9]+[0-9]*|0 {yylval.strval = strdup(yytext); return INT_VAL;}
+[1-9]+[0-9]*|0 {yylval.strval = strdup(yytext); return INT_VAL;}
 
-\.[0-9]*|\.[1-9][0-9]*([eE][+-]?[0-9]+)?|\.[0-9]+([eE][+-]?[0-9]+)? {yylval.strval = strdup(yytext); return DOUBLE_VAL;}
+[0-9]*(\.[0-9]*)?([Ee][+-]?[0-9]+)? {yylval.strval = strdup(yytext); return DOUBLE_VAL;}
 
 "/*"([^*]*|(\*+[^/]))*"*/" {yylval.nodeval = mknode("COMMENT",mknode(yytext,NULL,NULL),NULL); return COMMENT;}
 

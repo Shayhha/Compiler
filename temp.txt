@@ -117,3 +117,34 @@ ID '[' INT_VAL ']' string_assign_statement ',' many_string
              | ID '[' INT_VAL ']' string_assign_statement 
                 {$$ = mknode("string", mknode("!!", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), $5), NULL);};
              | 
+
+
+
+
+
+many_string : ID '[' INT_VAL ']'
+                {$$ = mknode("string", mknode($1, NULL, NULL), mknode($3, NULL, NULL));}
+            | ID '[' INT_VAL ']' string_assign_statement ',' many_string 
+                {$$ = mknode("list", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), mknode("value", $5, $7));};
+            | ID '[' INT_VAL ']' ',' many_string
+                {$$ = mknode("list", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), $6);}
+            | ID '[' INT_VAL ']' string_assign_statement 
+                {$$ = mknode("string", mknode("id", mknode($1, NULL, NULL), mknode($3, NULL, NULL)), $5);}
+           
+
+
+
+
+
+\.[0-9]*|\.[1-9][0-9]*([eE][+-]?[0-9]+)?|\.[0-9]+([eE][+-]?[0-9]+)? {yylval.strval = strdup(yytext); return DOUBLE_VAL;}
+
+
+| ADD ADD value {$$ = mknode("++ value", $3, NULL);}
+| value ADD ADD {$$ = mknode("value ++", $1, NULL);}  
+| SUB SUB value {$$ = mknode("-- value", $3, NULL);}
+| value SUB SUB {$$ = mknode("value --", $1, NULL);}
+
+| expression ADD '=' expression {$$ = mknode("+=", $1, $4);}
+| expression SUB '=' expression {$$ = mknode("-=", $1, $4);}
+| expression MULT '=' expression {$$ = mknode("*=", $1, $4);}
+| expression DIVIDE '=' expression {$$ = mknode("/=", $1, $4);}

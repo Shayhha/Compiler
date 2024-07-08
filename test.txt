@@ -1,1 +1,1 @@
-public int foo(args>> int: i, j, k) { }
+string x[12]<-"asd",x[12]<-"asd";
