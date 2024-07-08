@@ -35,6 +35,18 @@ void printtree(node* node, int indent) {
     printtree(node->right, indent + 1);
 }
 
+char* concat(const char* str1, const char* str2) {
+    int size1 = strlen(str1), size2 = strlen(str2);
+    int newSize = size1 + size2;
+ 
+    char* newStr = (char*)malloc((newSize + 1) * sizeof(char));
+    if (strcpy(newStr, str1) == 0)
+        return "";
+    if (strcat(newStr, str2) == 0)
+        return "";
+
+    return newStr; 
+}
 
 // char* intToString(int value) {
 //     int counter = 0;

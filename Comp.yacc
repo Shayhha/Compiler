@@ -34,7 +34,7 @@
 %%
 
 
-program : function {$$ = $1; printtree($$, 0);};
+program : value {$$ = $1; printtree($$, 0);};
 
 
 
@@ -208,12 +208,12 @@ expression : NULL_VALUE {$$ = $1;}
 value : INT_VAL {$$ = mknode($1, NULL, NULL);}
         | FLOAT_VAL {$$ = mknode($1, NULL, NULL);}
         | DOUBLE_VAL {$$ = mknode($1, NULL, NULL);}
-        | SUB INT_VAL {$$ = mknode("-", mknode($2, NULL, NULL), NULL);}
-        | SUB FLOAT_VAL {$$ = mknode("-", mknode($2, NULL, NULL), NULL);}
-        | SUB DOUBLE_VAL {$$ = mknode("-", mknode($2, NULL, NULL), NULL);}
-        | ADD INT_VAL {$$ = mknode("+", mknode($2, NULL, NULL), NULL);}
-        | ADD FLOAT_VAL {$$ = mknode("+", mknode($2, NULL, NULL), NULL);}
-        | ADD DOUBLE_VAL {$$ = mknode("+", mknode($2, NULL, NULL), NULL);}
+        | SUB INT_VAL {$$ = mknode(concat("-",$2), NULL, NULL);}
+        | SUB FLOAT_VAL {$$ = mknode(concat("-",$2), NULL, NULL);}
+        | SUB DOUBLE_VAL {$$ = mknode(concat("-",$2), NULL, NULL);}
+        | ADD INT_VAL {$$ = mknode(concat("+",$2), NULL, NULL);}
+        | ADD FLOAT_VAL {$$ = mknode(concat("+",$2), NULL, NULL);}
+        | ADD DOUBLE_VAL {$$ = mknode(concat("+",$2), NULL, NULL);}
         | ID {$$ = mknode($1, NULL, NULL);}
         | TRUE_VAL {$$ = $1;}
         | FALSE_VAL {$$ = $1;}
