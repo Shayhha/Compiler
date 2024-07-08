@@ -34,7 +34,7 @@
 %%
 
 
-program : string_assignment {$$ = $1; printtree($$, 0);};
+program : function {$$ = $1; printtree($$, 0);};
 
 
 
@@ -51,7 +51,7 @@ function_type : PRIVATE {$$ = $1;}
 
 function_return_type : param_type {$$ = $1;}
                         | STRING {$$ = mknode($1, NULL, NULL);}
-                        | VOID {$$ = mknode($1, NULL, NULL);}
+                        | VOID {$$ = $1;}
 
 function_args : ARGS func_args_decleration {$$ = mknode("args>>", $2, NULL);} 
 
@@ -224,7 +224,7 @@ value : INT_VAL {$$ = mknode($1, NULL, NULL);}
 %%
 #include "lex.yy.c"
 int main() {
-        yydebug = 1;  // Enable debugging output
+        //yydebug = 1;  // Enable debugging output
         return yyparse();
 }
 int yyerror(const char* error){
