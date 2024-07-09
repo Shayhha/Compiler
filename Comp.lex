@@ -58,7 +58,7 @@
 
 "/*"([^*]*|(\*+[^/]))*"*/" {yylval.nodeval = mknode("COMMENT",mknode(yytext,NULL,NULL),NULL); return COMMENT;}
 
-\".*\" {
+\"[^"]*\" {
     int len = 0, i = 0;
     while(yytext[len] != '\0') { len++; }
     while(yytext[i] != '\0') {

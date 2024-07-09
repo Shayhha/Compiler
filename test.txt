@@ -13,8 +13,7 @@ public void foo(args>> int: x, y, z; float: f) {
         x <- x + y;
     }
     else {
-        y <- x + y + z;
-        z <- y * 2;
-        f <- z;
+        string x[12] <- "asd" , ya[123] <- "xcvw" , c[33] , f[6] <- "123" ;
+        string re[12], z[12];
     }
 }
