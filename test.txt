@@ -1,19 +1,17 @@
-public void foo(args>> int: x, y, z; float: f) {
-    if (x>y) {
-        x <- x + y;
-    }
-    else {
-        y <- x + y + z;
-        z <- y * 2;
-        f <- z;
-    }
-}
-public void foo(args>> int: x, y, z; float: f) {
-    if (x>y) {
-        x <- x + y;
-    }
-    else {
-        string x[12] <- "asd" , ya[123] <- "xcvw" , c[33] , f[6] <- "123" ;
-        string re[12], z[12];
-    }
+public void foo(args>> int: x,y) {
+    do {
+        print(x,y);
+        while (x<5) {
+            goo(foo("asd"), 445, 0x14A3);
+        }
+
+        if (.45 > x) {
+            /* this isad  asnice */
+            x<-123;
+        }
+        else {
+            if (g>65 && (12 == lol) || "asd" != assasss) foo(goo());
+            y<-1299;
+        }
+    } while (something<=9);
 }

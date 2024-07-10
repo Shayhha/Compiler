@@ -30,6 +30,8 @@
 "true" {yylval.nodeval = mknode("TRUE",NULL,NULL); return TRUE_VAL;}
 "false" {yylval.nodeval = mknode("FALSE",NULL,NULL); return FALSE_VAL;}
 
+"/*"([^*]*|(\*+[^/]))*"*/" {yylval.nodeval = mknode("COMMENT",mknode(yytext,NULL,NULL),NULL); return COMMENT;}
+
 "&&" {return AND;}
 "<-" {return ASSIGN;} 
 "==" {return EQUAL;}
@@ -56,8 +58,6 @@
 
 [0-9]*(\.[0-9]*)?([Ee][+-]?[0-9]+)? {yylval.strval = strdup(yytext); return DOUBLE_VAL;}
 
-"/*"([^*]*|(\*+[^/]))*"*/" {yylval.nodeval = mknode("COMMENT",mknode(yytext,NULL,NULL),NULL); return COMMENT;}
-
 \"[^"]*\" {
     int len = 0, i = 0;
     while(yytext[len] != '\0') { len++; }
@@ -73,7 +73,9 @@
 
 \'.\' { yylval.strval = strdup(yytext); return CHAR_VAL; }
 
-[ \t\n]+ ;
+[ \t]+ ;
+
+[\n] { yylineno++; };
 
 . {return yytext[0];}
 %%

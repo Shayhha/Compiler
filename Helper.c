@@ -25,14 +25,38 @@ void printtree(node* node, int indent) {
     }
 
     // Print current node with indentation
-    for (int i = 0; i < indent; i++) {
-        printf("\t");
-    }
-    printf("%s\n", node->token);
+    if (strcmp(node->token,"") != 0) {
+        for (int i = 0; i < indent; i++) {
+            printf("\t");
+        }
 
-    // Recursively print left and right children with increased indentation
-    printtree(node->left, indent + 1);
-    printtree(node->right, indent + 1);
+        // Recursively print left and right children with increased indentation
+        if (node->left == NULL && node->right == NULL)
+            printf("(%s)\n", node->token);
+        else {
+            printf("(%s\n", node->token);
+            printtree(node->left, indent + 1);
+            printtree(node->right, indent + 1);
+
+            for (int i = 0; i < indent; i++) {
+                printf("\t");
+            }
+            printf(")\n");
+        }
+        
+
+    }
+    else {
+        // Recursively print left and right children with increased indentation
+        printtree(node->left, indent);
+        printtree(node->right, indent);
+
+        for (int i = 0; i < indent; i++) {
+            printf("\t");
+        }
+        printf(")\n");
+
+    }
 }
 
 char* concat(const char* str1, const char* str2) {

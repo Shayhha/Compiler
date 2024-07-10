@@ -148,3 +148,27 @@ many_string : ID '[' INT_VAL ']'
 | expression SUB '=' expression {$$ = mknode("-=", $1, $4);}
 | expression MULT '=' expression {$$ = mknode("*=", $1, $4);}
 | expression DIVIDE '=' expression {$$ = mknode("/=", $1, $4);}
+
+
+
+
+
+public void foo(args>> int: x,y) {
+    do {
+        print(x,y);
+        while (x<5) {
+            goo(foo("asd"), 445, 0x14A3);
+        }
+
+        if (.45 > x) {
+            /*this isad    
+            
+            asnice*/
+            x<-123;
+        }
+        else {
+            if (g>65 && (12 == lol) || "asd" != assasss) foo(goo());
+            y<-1299;
+        }
+    } while (something<=9);
+}
