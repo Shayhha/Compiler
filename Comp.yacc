@@ -1,5 +1,5 @@
  %{
-    #include "Helper.c"
+    #include "Helper.c" // This file contains the mknode function and a modified printtree function, and its required to run the compiler.
 %}
 %union {
     int intval;
@@ -30,9 +30,8 @@
 %nonassoc non_else
 %nonassoc ELSE
 
-%type<nodeval> assign_statement code functions function_call update function_params for_init_many for_init expression value for_statement function_return function_block function_static func_many_id func_args_decleration function_args function_return_type function_type function if_statement else_statement block statement_recursive statement program  while_statement do_while_statement var_assignment many_id param_type string_assignment many_string 
+%type<nodeval> assign_statement code functions function_call update function_params for_init_many for_init expression value for_statement return_statement function_block function_static func_many_id func_args_decleration function_args function_return_type function_type function if_statement else_statement block statement_recursive statement program  while_statement do_while_statement var_assignment many_id param_type string_assignment many_string 
 %%
-
 
 program : code {$$ = $1; printtree($$, 0);};
 
@@ -42,13 +41,13 @@ functions : function functions {$$ = mknode("", $1, $2);}
         | function {$$ = $1;};
 
 function : function_type function_return_type ID '(' function_args ')' function_static function_block 
-            {$$ = mknode("FUNCTION", $1, mknode("RETURN", $2, mknode("", mknode($3, NULL, NULL), mknode("ARGS>>", $5, mknode("", $7, mknode("FUNCTION BLOCK", $8, NULL))))));}
+            {$$ = mknode("FUNCTION", mknode($3, mknode("", $1, $7), mknode("ARGS>>", $5, NULL)), mknode("RETURN", $2, mknode("FUNCTION BLOCK", $8, NULL)));}
         | function_type function_return_type ID '(' function_args ')' function_block
-            {$$ = mknode("FUNCTION", $1, mknode("RETURN", $2, mknode("", mknode($3, NULL, NULL), mknode("ARGS>>", $5, mknode("FUNCTION BLOCK", $7, NULL)))));}
+            {$$ = mknode("FUNCTION", mknode($3, mknode("", $1, NULL), mknode("ARGS>>", $5, NULL)), mknode("RETURN", $2, mknode("FUNCTION BLOCK", $7, NULL)));}
         | function_type function_return_type ID '(' ')' function_static function_block
-            {$$ = mknode("FUNCTION", $1, mknode("RETURN", $2, mknode("", mknode($3, NULL, NULL), mknode("", $6, mknode("FUNCTION BLOCK", $7, NULL)))));}
+            {$$ = mknode("FUNCTION", mknode($3, mknode("", $1, $6), NULL), mknode("RETURN", $2, mknode("FUNCTION BLOCK", $7, NULL)));}
         | function_type function_return_type ID '(' ')' function_block
-            {$$ = mknode("FUNCTION", $1, mknode("RETURN", $2, mknode("", mknode($3, NULL, NULL), mknode("FUNCTION BLOCK", $6, NULL))));}
+            {$$ = mknode("FUNCTION", mknode($3, mknode("", $1, NULL), NULL), mknode("RETURN", $2, mknode("FUNCTION BLOCK", $6, NULL)));}
 
 function_type : PRIVATE {$$ = $1;}
                 | PUBLIC {$$ = $1;}
@@ -64,19 +63,13 @@ func_args_decleration : param_type ':' func_many_id ';' func_args_decleration {$
                         | STRING ':' func_many_id ';' func_args_decleration {$$ = mknode("STRING", mknode("", $3, NULL), $5);} 
                         | STRING ':' func_many_id {$$ = mknode("STRING", $3, NULL);}
 
-
 func_many_id : ID ',' func_many_id {$$ = mknode($1, $3, NULL);}
                 | ID {$$ = mknode($1, NULL, NULL);};
 
-function_static : ':' STATIC {$$ = mknode(":", $2, NULL);} 
+function_static : ':' STATIC {$$ = mknode("", $2, NULL);} 
 
-function_block : '{' statement_recursive function_return '}' {$$ = mknode("", $2, $3);}
-                | '{' statement_recursive '}' {$$ = mknode("", $2, NULL);}
-                | '{' function_return '}' {$$ = mknode("", $2, NULL);};
+function_block : '{' statement_recursive '}' {$$ = mknode("", $2, NULL);}
                 | '{' '}' {$$ = NULL;};
-
-function_return : RETURN expression ';' {$$ = mknode("RETURN", $2, NULL);};
-
 
 
 
@@ -85,24 +78,34 @@ function_call : ID '(' function_params ')' {$$ = mknode(concat($1,"( params: ...
 
 function_params : expression ',' function_params {$$ = mknode("", $1, $3);}
                 | expression {$$ = $1;}
-                
 
 
+
+block : '{' statement_recursive '}' {$$ = mknode("BLOCK", $2, NULL);}
 
 
 
 
 do_while_statement : DO block WHILE '(' expression ')' ';' {$$ = mknode("DO WHILE", $2, $5);};
 
-while_statement : WHILE '(' expression ')' block {$$ = mknode("WHILE", $3, $5);};
+while_statement : WHILE '(' expression ')' statement {$$ = mknode("WHILE", $3, $5);}
+                | WHILE '(' expression ')' block {$$ = mknode("WHILE", $3, $5);};
 
 for_statement : FOR '(' for_init ';' expression ';' update ')' block 
-                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, mknode("UPDATE", $7, NULL))), mknode("FOR BLOCK", $9, NULL));};
+                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, mknode("UPDATE", $7, NULL))), mknode("FOR BLOCK", $9, NULL));}
                 | FOR '(' for_init ';' expression ';' ')' block 
-                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, NULL)), mknode("FOR BLOCK", $8, NULL));};
+                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, NULL)), mknode("FOR BLOCK", $8, NULL));}
                 | FOR '(' ';' expression ';' update ')' block 
-                        {$$ = mknode("FOR", mknode("EXPRESSION", $4, mknode("UPDATE", $6, NULL)), mknode("FOR BLOCK", $8, NULL));};
+                        {$$ = mknode("FOR", mknode("EXPRESSION", $4, mknode("UPDATE", $6, NULL)), mknode("FOR BLOCK", $8, NULL));}
                 | FOR '(' ';' expression ';' ')' block 
+                        {$$ = mknode("FOR", mknode("EXPRESSION", $4, NULL), mknode("FOR BLOCK", $7, NULL));}
+                | FOR '(' for_init ';' expression ';' update ')' statement
+                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, mknode("UPDATE", $7, NULL))), mknode("FOR BLOCK", $9, NULL));}
+                | FOR '(' for_init ';' expression ';' ')' statement 
+                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, NULL)), mknode("FOR BLOCK", $8, NULL));}
+                | FOR '(' ';' expression ';' update ')' statement 
+                        {$$ = mknode("FOR", mknode("EXPRESSION", $4, mknode("UPDATE", $6, NULL)), mknode("FOR BLOCK", $8, NULL));}
+                | FOR '(' ';' expression ';' ')' statement 
                         {$$ = mknode("FOR", mknode("EXPRESSION", $4, NULL), mknode("FOR BLOCK", $7, NULL));};
 
 
@@ -122,19 +125,24 @@ update : expression ',' update {$$ = mknode("", $1, $3);}
         | ID assign_statement {$$ = mknode(concat("ASSIGN  ",$1), $2, NULL);}
         
 
-if_statement : IF '(' expression ')' block %prec non_else {$$ = mknode("IF", mknode("CONDITION",$3, NULL), $5);}
+
+if_statement : IF '(' expression ')' statement %prec non_else {$$ = mknode("IF", mknode("CONDITION",$3, NULL), $5);}
+                | IF '(' expression ')' statement else_statement {$$ = mknode("", mknode("IF", mknode("CONDITION",$3, NULL), $5), mknode("ELSE", $6, NULL));};
+                | IF '(' expression ')' block %prec non_else {$$ = mknode("IF", mknode("CONDITION",$3, NULL), $5);}
                 | IF '(' expression ')' block else_statement {$$ = mknode("", mknode("IF", mknode("CONDITION",$3, NULL), $5), mknode("ELSE", $6, NULL));};
 
-else_statement : ELSE block {$$ = mknode("", $2, NULL);}
+else_statement : ELSE statement {$$ = mknode("", $2, NULL);}
+                | ELSE block {$$ = mknode("", $2, NULL);}
 
 
 
 
-block : statement {$$ = mknode("STATEMENT", $1, NULL);} 
-        | '{' statement_recursive '}' {$$ = mknode("BLOCK", $2,NULL);};
+return_statement : RETURN expression ';' {$$ = mknode("RETURN", $2, NULL);};
 
 statement_recursive : statement {$$ = $1;}
-                    | statement_recursive statement {$$ = mknode("", $1, $2);};
+                    | statement statement_recursive {$$ = mknode("", $1, $2);}
+                    | block {$$ = $1;}
+                    | block statement_recursive {$$ = mknode("", $1, $2);}
 
 statement : var_assignment {$$ = $1;} 
                 | string_assignment {$$ = $1;}
@@ -145,9 +153,10 @@ statement : var_assignment {$$ = $1;}
                 | function {$$ = $1;}
                 | COMMENT {$$ = $1;} 
                 | expression ';' {$$ = $1;}
-                
+                | return_statement {$$ = $1;}
+                | '{' '}' {$$ = NULL;};
 
-                    
+
 
 string_assignment : STRING many_string ';' {$$ = mknode("STRING", $2, NULL);}
                     | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), $3), mknode("assign", mknode($6, NULL, NULL), NULL));} 
@@ -188,6 +197,7 @@ param_type : INT {$$ = mknode($1,NULL,NULL);}
              | CHAR_PTR {$$ = mknode($1,NULL,NULL);}
              | BOOL {$$ = mknode($1,NULL,NULL);};
 
+
 expression : NULL_VALUE {$$ = $1;}
             | ADDRESS ID {$$ = mknode("&", mknode($2,NULL,NULL), NULL);}
             | MULT ID {$$ = mknode("*", mknode($2,NULL,NULL), NULL);}
@@ -211,7 +221,6 @@ expression : NULL_VALUE {$$ = $1;}
             | value {$$ = $1;}
             | function_call {$$ = $1;}
          
-
            
 value : INT_VAL {$$ = mknode($1, NULL, NULL);}
         | FLOAT_VAL {$$ = mknode($1, NULL, NULL);}
