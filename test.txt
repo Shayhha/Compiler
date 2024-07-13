@@ -1,17 +1,20 @@
-public void foo(args>> int: x,y) {
-    do {
-        print(x,y);
-        while (x<5) {
-            goo(foo("asd"), 445, 0x14A3);
+public int foo() {
+    var int: x;
+    {
+        var int: y;
+        x <- 1;
+        y <- 2;
+        {
+            x <- 2;
         }
+        y <- 3;
+    }
+    return 0;
+}
 
-        if (.45 > x) {
-            /* this isad  asnice */
-            x<-123;
-        }
-        else {
-            if (g>65 && (12 == lol) || "asd" != assasss) foo(goo());
-            y<-1299;
-        }
-    } while (something<=9);
+private int foo(): static {
+    {
+        {} /* empty code blocks are okay, although not very useful */
+    }
+    return 0;
 }

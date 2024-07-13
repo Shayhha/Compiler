@@ -32,7 +32,7 @@ void printtree(node* node, int indent) {
 
         // Recursively print left and right children with increased indentation
         if (node->left == NULL && node->right == NULL)
-            printf("(%s)\n", node->token);
+            printf("%s\n", node->token);
         else {
             printf("(%s\n", node->token);
             printtree(node->left, indent + 1);
@@ -50,12 +50,6 @@ void printtree(node* node, int indent) {
         // Recursively print left and right children with increased indentation
         printtree(node->left, indent);
         printtree(node->right, indent);
-
-        for (int i = 0; i < indent; i++) {
-            printf("\t");
-        }
-        printf(")\n");
-
     }
 }
 

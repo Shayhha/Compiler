@@ -30,7 +30,7 @@
 "true" {yylval.nodeval = mknode("TRUE",NULL,NULL); return TRUE_VAL;}
 "false" {yylval.nodeval = mknode("FALSE",NULL,NULL); return FALSE_VAL;}
 
-"/*"([^*]*|(\*+[^/]))*"*/" {yylval.nodeval = mknode("COMMENT",mknode(yytext,NULL,NULL),NULL); return COMMENT;}
+\/\*([^*]|(\*+[^*/]))*\*\/ ;
 
 "&&" {return AND;}
 "<-" {return ASSIGN;} 
@@ -48,7 +48,7 @@
 \/ {return DIVIDE;}
 \& {return ADDRESS;}
 
-[a-zA-Z][a-zA-Z0-9]* {yylval.strval = strdup(yytext); return ID;} 
+[a-zA-Z][a-zA-Z0-9_]* {yylval.strval = strdup(yytext); return ID;} 
 
 (0x|0X)[0-9A-F]+ {yylval.strval = strdup(yytext); return HEX_VAL;}
 
