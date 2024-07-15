@@ -49,8 +49,7 @@ function : function_type function_return_type ID '(' function_args ')' function_
         | function_type function_return_type ID '(' ')' function_block
             {$$ = mknode("FUNCTION", mknode($3, mknode("", $1, NULL), NULL), mknode("RETURN", $2, mknode("FUNCTION BLOCK", $6, NULL)));}
 
-function_type : PRIVATE {$$ = $1;}
-                | PUBLIC {$$ = $1;}
+function_type : PRIVATE {$$ = $1;} | PUBLIC {$$ = $1;}
 
 function_return_type : param_type {$$ = $1;}
                         | STRING {$$ = mknode($1, NULL, NULL);}
@@ -142,8 +141,6 @@ block_contents : declarations functions statements {$$ = mknode("", mknode("", $
                 | declarations {$$ = $1;}
                 | functions {$$ = $1;}
                 | statements {$$ = $1;}
-                | block block_contents {$$ = mknode("", $1, $2);}
-                | block {$$ = $1;}
 
 
 
@@ -157,11 +154,13 @@ statement : if_statement {$$ = $1;}
         | '{' '}' {$$ = NULL;};
         | ID assignment ';' {$$ = mknode("ASSIGN", mknode($1, NULL, NULL), $2);}            
         | MULT ID assignment ';' {$$ = mknode("ASSIGN", mknode($2, NULL, NULL), $3);}; 
-        | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), $3), mknode("assign", mknode($6, NULL, NULL), NULL));} 
-        | ID '[' expression ']' ASSIGN ID ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), $3), mknode("assign", mknode($6, NULL, NULL), NULL));}                          
+        | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), $3), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));} 
+        | ID '[' expression ']' ASSIGN ID ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), $3), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));}                          
 
 statements : statement statements {$$ = mknode("", $1, $2);}
         | statement {$$ = $1;}
+        | block statements {$$ = mknode("", $1, $2);}
+        | block {$$ = $1;}
         
 
 
@@ -173,8 +172,7 @@ declaration : var_declaration {$$ = $1;}
 
                 
 
-string_declaration  : STRING many_string ';' {$$ = mknode("STRING", $2, NULL);}
-                    
+string_declaration  : STRING many_string ';' {$$ = mknode("STRING", $2, NULL);}        
                         
 many_string : ID '[' INT_VAL ']' assignment ',' many_string 
                 {$$ = mknode("", mknode("ID", mknode($1, NULL, NULL), mknode(concat(concat("[",$3),"]"), NULL, NULL)), mknode("ASSIGN", $5, $7));}
@@ -186,8 +184,8 @@ many_string : ID '[' INT_VAL ']' assignment ',' many_string
                 {$$ = mknode("", mknode($1, NULL, NULL), mknode(concat(concat("[",$3),"]"), NULL, NULL));};
              
 
+
 var_declaration : VAR param_type ':' many_id ';' {$$ = mknode("DECLARATION", $2, $4);}
-    
 
 many_id : ID assignment ',' many_id {$$ = mknode($1, $2, $4);}
           | ID ',' many_id {$$ = mknode($1, $3, NULL);}
