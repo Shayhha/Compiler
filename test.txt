@@ -19,6 +19,6 @@ public void foo(args>> int: x,y) {
             if (g>65 && (12 == lol) || "asd" != assasss) foo(goo());
             y<-1299;
         }
-    } while (something<=9);
+    } while (something<=9); {x<-100;}
 }
 
