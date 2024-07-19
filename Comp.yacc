@@ -16,9 +16,9 @@
 %debug
 
 %token<strval> CHAR INT DOUBLE FLOAT STRING INT_PTR CHAR_PTR DOUBLE_PTR FLOAT_PTR BOOL   
-%token<nodeval> IF ELSE VAR ARGS PUBLIC PRIVATE STATIC RETURN NULL_VALUE VOID COMMENT DO WHILE FOR
-%token<nodeval> ADD SUB MULT DIVIDE ASSIGN EQUAL GREATER GREATER_EQ LESSER LESSER_EQ NOT NOT_EQ AND OR ADDRESS
-%token<nodeval> TRUE_VAL FALSE_VAL 
+%token<strval> IF ELSE VAR ARGS PUBLIC PRIVATE STATIC RETURN NULL_VALUE VOID COMMENT DO WHILE FOR
+%token<strval> ADD SUB MULT DIVIDE ASSIGN EQUAL GREATER GREATER_EQ LESSER LESSER_EQ NOT NOT_EQ AND OR ADDRESS
+%token<strval> TRUE_VAL FALSE_VAL 
 %token<strval> HEX_VAL STRING_VAL ID CHAR_VAL INT_VAL FLOAT_VAL DOUBLE_VAL 
 
 %left ADD SUB
@@ -49,11 +49,11 @@ function : function_type function_return_type ID '(' function_args ')' function_
         | function_type function_return_type ID '(' ')' function_block
             {$$ = mknode("FUNCTION", mknode($3, mknode("", $1, NULL), NULL), mknode("RETURN", $2, mknode("FUNCTION BLOCK", $6, NULL)));}
 
-function_type : PRIVATE {$$ = $1;} | PUBLIC {$$ = $1;}
+function_type : PRIVATE {$$ = mknode($1, NULL, NULL);} | PUBLIC {$$ = mknode($1, NULL, NULL);}
 
 function_return_type : param_type {$$ = $1;}
                         | STRING {$$ = mknode($1, NULL, NULL);}
-                        | VOID {$$ = $1;}
+                        | VOID {$$ = mknode($1, NULL, NULL);}
 
 function_args : ARGS func_args_decleration {$$ = mknode("", $2, NULL);} 
 
@@ -65,7 +65,7 @@ func_args_decleration : param_type ':' func_many_id ';' func_args_decleration {$
 func_many_id : ID ',' func_many_id {$$ = mknode($1, $3, NULL);}
                 | ID {$$ = mknode($1, NULL, NULL);};
 
-function_static : ':' STATIC {$$ = mknode("", $2, NULL);} 
+function_static : ':' STATIC {$$ = mknode($2, NULL, NULL);} 
 
 function_block : '{' block_contents '}' {$$ = mknode("", $2, NULL);}
                 | '{' '}' {$$ = NULL;};
@@ -82,25 +82,25 @@ function_params : expression ',' function_params {$$ = mknode("", $1, $3);}
 
 do_while_statement : DO block WHILE '(' expression ')' ';' {$$ = mknode("DO WHILE", $2, $5);};
 
-while_statement : WHILE '(' expression ')' statement {$$ = mknode("WHILE", $3, $5);}
-                | WHILE '(' expression ')' block {$$ = mknode("WHILE", $3, $5);};
+while_statement : WHILE '(' expression ')' statement {$$ = mknode($1, $3, $5);}
+                | WHILE '(' expression ')' block {$$ = mknode($1, $3, $5);};
 
 for_statement : FOR '(' for_init ';' expression ';' update ')' block 
-                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, mknode("UPDATE", $7, NULL))), mknode("FOR BLOCK", $9, NULL));}
+                        {$$ = mknode($1, mknode("ASSIGN", $3, mknode("EXPRESSION", $5, mknode("UPDATE", $7, NULL))), mknode("FOR BLOCK", $9, NULL));}
                 | FOR '(' for_init ';' expression ';' ')' block 
-                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, NULL)), mknode("FOR BLOCK", $8, NULL));}
+                        {$$ = mknode($1, mknode("ASSIGN", $3, mknode("EXPRESSION", $5, NULL)), mknode("FOR BLOCK", $8, NULL));}
                 | FOR '(' ';' expression ';' update ')' block 
-                        {$$ = mknode("FOR", mknode("EXPRESSION", $4, mknode("UPDATE", $6, NULL)), mknode("FOR BLOCK", $8, NULL));}
+                        {$$ = mknode($1, mknode("EXPRESSION", $4, mknode("UPDATE", $6, NULL)), mknode("FOR BLOCK", $8, NULL));}
                 | FOR '(' ';' expression ';' ')' block 
-                        {$$ = mknode("FOR", mknode("EXPRESSION", $4, NULL), mknode("FOR BLOCK", $7, NULL));}
+                        {$$ = mknode($1, mknode("EXPRESSION", $4, NULL), mknode("FOR BLOCK", $7, NULL));}
                 | FOR '(' for_init ';' expression ';' update ')' statement
-                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, mknode("UPDATE", $7, NULL))), mknode("FOR BLOCK", $9, NULL));}
+                        {$$ = mknode($1, mknode("ASSIGN", $3, mknode("EXPRESSION", $5, mknode("UPDATE", $7, NULL))), mknode("FOR BLOCK", $9, NULL));}
                 | FOR '(' for_init ';' expression ';' ')' statement 
-                        {$$ = mknode("FOR", mknode("ASSIGN", $3, mknode("EXPRESSION", $5, NULL)), mknode("FOR BLOCK", $8, NULL));}
+                        {$$ = mknode($1, mknode("ASSIGN", $3, mknode("EXPRESSION", $5, NULL)), mknode("FOR BLOCK", $8, NULL));}
                 | FOR '(' ';' expression ';' update ')' statement 
-                        {$$ = mknode("FOR", mknode("EXPRESSION", $4, mknode("UPDATE", $6, NULL)), mknode("FOR BLOCK", $8, NULL));}
+                        {$$ = mknode($1, mknode("EXPRESSION", $4, mknode("UPDATE", $6, NULL)), mknode("FOR BLOCK", $8, NULL));}
                 | FOR '(' ';' expression ';' ')' statement 
-                        {$$ = mknode("FOR", mknode("EXPRESSION", $4, NULL), mknode("FOR BLOCK", $7, NULL));};
+                        {$$ = mknode($1, mknode("EXPRESSION", $4, NULL), mknode("FOR BLOCK", $7, NULL));};
 
 
 
@@ -120,15 +120,15 @@ update : expression ',' update {$$ = mknode("", $1, $3);}
         
 
 
-if_statement : IF '(' expression ')' statement %prec non_else {$$ = mknode("IF", mknode("CONDITION",$3, NULL), $5);}
-                | IF '(' expression ')' statement else_statement {$$ = mknode("", mknode("IF", mknode("CONDITION",$3, NULL), $5), mknode("ELSE", $6, NULL));};
-                | IF '(' expression ')' block %prec non_else {$$ = mknode("IF", mknode("CONDITION",$3, NULL), $5);}
-                | IF '(' expression ')' block else_statement {$$ = mknode("", mknode("IF", mknode("CONDITION",$3, NULL), $5), mknode("ELSE", $6, NULL));};
+if_statement : IF '(' expression ')' statement %prec non_else {$$ = mknode($1, mknode("CONDITION",$3, NULL), $5);}
+                | IF '(' expression ')' statement else_statement {$$ = mknode("", mknode($1, mknode("CONDITION",$3, NULL), $5), mknode("ELSE", $6, NULL));};
+                | IF '(' expression ')' block %prec non_else {$$ = mknode($1, mknode("CONDITION",$3, NULL), $5);}
+                | IF '(' expression ')' block else_statement {$$ = mknode("", mknode($1, mknode("CONDITION",$3, NULL), $5), mknode("ELSE", $6, NULL));};
 
 else_statement : ELSE statement {$$ = mknode("", $2, NULL);}
                 | ELSE block {$$ = mknode("", $2, NULL);}
 
-return_statement : RETURN expression ';' {$$ = mknode("RETURN", $2, NULL);};
+return_statement : RETURN expression ';' {$$ = mknode($1, $2, NULL);};
 
 
 
@@ -148,7 +148,7 @@ statement : if_statement {$$ = $1;}
         | for_statement {$$ = $1;} 
         | while_statement {$$ = $1;} 
         | do_while_statement {$$ = $1;} 
-        | COMMENT {$$ = $1;} 
+        | COMMENT {$$ = mknode($1, NULL, NULL);} 
         | expression ';' {$$ = $1;}
         | return_statement {$$ = $1;}
         | '{' '}' {$$ = NULL;};
@@ -208,7 +208,7 @@ param_type : INT {$$ = mknode($1,NULL,NULL);}
              | BOOL {$$ = mknode($1,NULL,NULL);};
 
 
-expression : NULL_VALUE {$$ = $1;}
+expression : NULL_VALUE {$$ = mknode($1, NULL, NULL);}
             | ADDRESS ID {$$ = mknode("&", mknode($2,NULL,NULL), NULL);}
             | MULT ID {$$ = mknode("*", mknode($2,NULL,NULL), NULL);}
             | NOT expression {$$ = mknode("! (not)", $2, NULL);}
@@ -242,8 +242,8 @@ value : INT_VAL {$$ = mknode($1, NULL, NULL);}
         | ADD FLOAT_VAL {$$ = mknode(concat("+",$2), NULL, NULL);}
         | ADD DOUBLE_VAL {$$ = mknode(concat("+",$2), NULL, NULL);}
         | ID {$$ = mknode($1, NULL, NULL);}
-        | TRUE_VAL {$$ = $1;}
-        | FALSE_VAL {$$ = $1;}
+        | TRUE_VAL {$$ = mknode($1, NULL, NULL);}
+        | FALSE_VAL {$$ = mknode($1, NULL, NULL);}
         | CHAR_VAL {$$ = mknode($1, NULL, NULL);}
         | STRING_VAL {$$ = mknode($1, NULL, NULL);}
         | HEX_VAL {$$ = mknode($1, NULL, NULL);};

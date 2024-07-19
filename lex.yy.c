@@ -875,77 +875,77 @@ YY_RULE_SETUP
 case 11:
 YY_RULE_SETUP
 #line 16 "Comp.lex"
-{yylval.nodeval = mknode("IF",NULL,NULL); return IF;}
+{yylval.strval = strdup("IF"); return IF;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
 #line 17 "Comp.lex"
-{yylval.nodeval = mknode("ELSE",NULL,NULL); return ELSE;}
+{yylval.strval = strdup("ELSE"); return ELSE;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 18 "Comp.lex"
-{yylval.nodeval = mknode("WHILE",NULL,NULL); return WHILE;}
+{yylval.strval = strdup("WHILE"); return WHILE;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
 #line 19 "Comp.lex"
-{yylval.nodeval = mknode("FOR",NULL,NULL); return FOR;}
+{yylval.strval = strdup("FOR"); return FOR;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 20 "Comp.lex"
-{yylval.nodeval = mknode("VAR",NULL,NULL); return VAR;}
+{yylval.strval = strdup("VAR"); return VAR;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 21 "Comp.lex"
-{yylval.nodeval = mknode("ARGS",NULL,NULL); return ARGS;}
+{yylval.strval = strdup("ARGS>>"); return ARGS;}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 22 "Comp.lex"
-{yylval.nodeval = mknode("PUBLIC",NULL,NULL); return PUBLIC;}
+{yylval.strval = strdup("PUBLIC"); return PUBLIC;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
 #line 23 "Comp.lex"
-{yylval.nodeval = mknode("PRIVATE",NULL,NULL); return PRIVATE;}
+{yylval.strval = strdup("PRIVATE"); return PRIVATE;}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
 #line 24 "Comp.lex"
-{yylval.nodeval = mknode("STATIC",NULL,NULL); return STATIC;}
+{yylval.strval = strdup("STATIC"); return STATIC;}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 25 "Comp.lex"
-{yylval.nodeval = mknode("RETURN",NULL,NULL); return RETURN;}
+{yylval.strval = strdup("RETURN"); return RETURN;}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
 #line 26 "Comp.lex"
-{yylval.nodeval = mknode("NULL",NULL,NULL); return NULL_VALUE;}
+{yylval.strval = strdup("NULL"); return NULL_VALUE;}
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
 #line 27 "Comp.lex"
-{yylval.nodeval = mknode("VOID",NULL,NULL); return VOID;}
+{yylval.strval = strdup("VOID"); return VOID;}
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 #line 28 "Comp.lex"
-{yylval.nodeval = mknode("DO",NULL,NULL); return DO;}
+{yylval.strval = strdup("DO"); return DO;}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
 #line 30 "Comp.lex"
-{yylval.nodeval = mknode("TRUE",NULL,NULL); return TRUE_VAL;}
+{yylval.strval = strdup("TRUE"); return TRUE_VAL;}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
 #line 31 "Comp.lex"
-{yylval.nodeval = mknode("FALSE",NULL,NULL); return FALSE_VAL;}
+{yylval.strval = strdup("FALSE"); return FALSE_VAL;}
 	YY_BREAK
 case 26:
 /* rule 26 can match eol */

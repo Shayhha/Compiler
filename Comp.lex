@@ -13,22 +13,22 @@
 "char*" {yylval.strval = strdup("char*"); return CHAR_PTR;}
 "double*" {yylval.strval = strdup("double*"); return DOUBLE_PTR;}
 "float*" {yylval.strval = strdup("float*"); return FLOAT_PTR;}
-"if" {yylval.nodeval = mknode("IF",NULL,NULL); return IF;}
-"else" {yylval.nodeval = mknode("ELSE",NULL,NULL); return ELSE;}
-"while" {yylval.nodeval = mknode("WHILE",NULL,NULL); return WHILE;}
-"for" {yylval.nodeval = mknode("FOR",NULL,NULL); return FOR;}
-"var" {yylval.nodeval = mknode("VAR",NULL,NULL); return VAR;}
-"args>>" {yylval.nodeval = mknode("ARGS",NULL,NULL); return ARGS;}
-"public" {yylval.nodeval = mknode("PUBLIC",NULL,NULL); return PUBLIC;}
-"private" {yylval.nodeval = mknode("PRIVATE",NULL,NULL); return PRIVATE;}
-"static" {yylval.nodeval = mknode("STATIC",NULL,NULL); return STATIC;}
-"return" {yylval.nodeval = mknode("RETURN",NULL,NULL); return RETURN;}
-"null" {yylval.nodeval = mknode("NULL",NULL,NULL); return NULL_VALUE;}
-"void" {yylval.nodeval = mknode("VOID",NULL,NULL); return VOID;}
-"do" {yylval.nodeval = mknode("DO",NULL,NULL); return DO;}
+"if" {yylval.strval = strdup("IF"); return IF;}
+"else" {yylval.strval = strdup("ELSE"); return ELSE;}
+"while" {yylval.strval = strdup("WHILE"); return WHILE;}
+"for" {yylval.strval = strdup("FOR"); return FOR;}
+"var" {yylval.strval = strdup("VAR"); return VAR;}
+"args>>" {yylval.strval = strdup("ARGS>>"); return ARGS;}
+"public" {yylval.strval = strdup("PUBLIC"); return PUBLIC;}
+"private" {yylval.strval = strdup("PRIVATE"); return PRIVATE;}
+"static" {yylval.strval = strdup("STATIC"); return STATIC;}
+"return" {yylval.strval = strdup("RETURN"); return RETURN;}
+"null" {yylval.strval = strdup("NULL"); return NULL_VALUE;}
+"void" {yylval.strval = strdup("VOID"); return VOID;}
+"do" {yylval.strval = strdup("DO"); return DO;}
 
-"true" {yylval.nodeval = mknode("TRUE",NULL,NULL); return TRUE_VAL;}
-"false" {yylval.nodeval = mknode("FALSE",NULL,NULL); return FALSE_VAL;}
+"true" {yylval.strval = strdup("TRUE"); return TRUE_VAL;}
+"false" {yylval.strval = strdup("FALSE"); return FALSE_VAL;}
 
 \/\*([^*]|(\*+[^*/]))*\*\/ ;
 
