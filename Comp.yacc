@@ -1,5 +1,6 @@
  %{
-    #include "Helper.c" // This file contains the mknode function and a modified printtree function, and its required to run the compiler.
+    //#include "Helper.c" // This file contains the mknode function and a modified printtree function, and its required to run the compiler.
+    #include "Stack.c" // This is a file that contans the linked list and stack implementations for part 2 of the project
 %}
 %union {
     int intval;
@@ -33,12 +34,12 @@
 %type<nodeval> declaration declarations statement statements assignment code functions function_call update function_params for_init_many for_init expression value for_statement return_statement function_block function_static func_many_id func_args_decleration function_args function_return_type function_type function if_statement else_statement block block_contents program while_statement do_while_statement var_declaration many_id param_type string_declaration many_string 
 %%
 
-program : code {$$ = $1; printtree($$, 0);};
+program : code {$$ = $1; printtree($$, 0); checktree($$);};
 
 code : functions {$$ = mknode("CODE", $1, NULL);}
 
 functions : function functions {$$ = mknode("", $1, $2);}
-        | function {$$ = $1;};
+        | function {$$ = mknode("", $1, NULL);};
 
 function : function_type function_return_type ID '(' function_args ')' function_static function_block 
             {$$ = mknode("FUNCTION", mknode($3, mknode("", $1, $7), mknode("ARGS>>", $5, NULL)), mknode("RETURN", $2, mknode("FUNCTION BLOCK", $8, NULL)));}
@@ -67,7 +68,7 @@ func_many_id : ID ',' func_many_id {$$ = mknode($1, $3, NULL);}
 
 function_static : ':' STATIC {$$ = mknode($2, NULL, NULL);} 
 
-function_block : '{' block_contents '}' {$$ = mknode("", $2, NULL);}
+function_block : '{' block_contents '}' {$$ = mknode("{", $2, mknode("}",NULL,NULL));}
                 | '{' '}' {$$ = NULL;};
 
 
@@ -132,7 +133,7 @@ return_statement : RETURN expression ';' {$$ = mknode($1, $2, NULL);};
 
 
 
-block : '{' block_contents '}' {$$ = mknode("BLOCK", $2, NULL);}
+block : '{' block_contents '}' {$$ = mknode("{", $2, mknode("}",NULL,NULL));}
 
 block_contents : declarations functions statements {$$ = mknode("", mknode("", $1, $2), $3);}
                 | declarations functions {$$ = mknode("", $1, $2);}
@@ -164,7 +165,7 @@ statements : statement statements {$$ = mknode("", $1, $2);}
         
 
 
-declarations : declaration declarations {$$ = mknode("", $1, $2);} 
+declarations : declaration declarations {$$ = mknode("DECLERATION", $1, $2);} 
         | declaration {$$ = $1;}
 
 declaration : var_declaration {$$ = $1;} 
@@ -185,14 +186,14 @@ many_string : ID '[' INT_VAL ']' assignment ',' many_string
              
 
 
-var_declaration : VAR param_type ':' many_id ';' {$$ = mknode("DECLARATION", $2, $4);}
+var_declaration : VAR param_type ':' many_id ';' {$$ = mknode("VAR", $2, $4);}
 
 many_id : ID assignment ',' many_id {$$ = mknode($1, $2, $4);}
           | ID ',' many_id {$$ = mknode($1, $3, NULL);}
           | ID assignment {$$ = mknode($1, $2, NULL);}
           | ID {$$ = mknode($1, NULL, NULL);};
 
-assignment : ASSIGN expression {$$ = $2;}
+assignment : ASSIGN expression {$$ = mknode("ASSIGN",$2,NULL);}
         | ASSIGN ADDRESS ID '[' expression ']' {$$ = mknode(concat("&",$3), $5, NULL);}
 
 

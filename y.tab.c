@@ -1611,7 +1611,7 @@ yyreduce:
     {
   case 2: /* program: code  */
 #line 37 "Comp.yacc"
-               {(yyval.nodeval) = (yyvsp[0].nodeval); printtree((yyval.nodeval), 0);}
+               {(yyval.nodeval) = (yyvsp[0].nodeval); printtree((yyval.nodeval), 0); checktree((yyval.nodeval));}
 #line 1616 "y.tab.c"
     break;
 
@@ -1629,7 +1629,7 @@ yyreduce:
 
   case 5: /* functions: function  */
 #line 42 "Comp.yacc"
-                   {(yyval.nodeval) = (yyvsp[0].nodeval);}
+                   {(yyval.nodeval) = mknode("", (yyvsp[0].nodeval), NULL);}
 #line 1634 "y.tab.c"
     break;
 
@@ -1737,7 +1737,7 @@ yyreduce:
 
   case 23: /* function_block: '{' block_contents '}'  */
 #line 71 "Comp.yacc"
-                                        {(yyval.nodeval) = mknode("", (yyvsp[-1].nodeval), NULL);}
+                                        {(yyval.nodeval) = mknode("{", (yyvsp[-1].nodeval), mknode("}",NULL,NULL));}
 #line 1742 "y.tab.c"
     break;
 
@@ -1947,7 +1947,7 @@ yyreduce:
 
   case 58: /* block: '{' block_contents '}'  */
 #line 136 "Comp.yacc"
-                               {(yyval.nodeval) = mknode("BLOCK", (yyvsp[-1].nodeval), NULL);}
+                               {(yyval.nodeval) = mknode("{", (yyvsp[-1].nodeval), mknode("}",NULL,NULL));}
 #line 1952 "y.tab.c"
     break;
 
@@ -2091,7 +2091,7 @@ yyreduce:
 
   case 82: /* declarations: declaration declarations  */
 #line 168 "Comp.yacc"
-                                        {(yyval.nodeval) = mknode("", (yyvsp[-1].nodeval), (yyvsp[0].nodeval));}
+                                        {(yyval.nodeval) = mknode("DECLERATION", (yyvsp[-1].nodeval), (yyvsp[0].nodeval));}
 #line 2096 "y.tab.c"
     break;
 
@@ -2145,7 +2145,7 @@ yyreduce:
 
   case 91: /* var_declaration: VAR param_type ':' many_id ';'  */
 #line 189 "Comp.yacc"
-                                                 {(yyval.nodeval) = mknode("DECLARATION", (yyvsp[-3].nodeval), (yyvsp[-1].nodeval));}
+                                                 {(yyval.nodeval) = mknode("VAR", (yyvsp[-3].nodeval), (yyvsp[-1].nodeval));}
 #line 2150 "y.tab.c"
     break;
 
@@ -2175,7 +2175,7 @@ yyreduce:
 
   case 96: /* assignment: ASSIGN expression  */
 #line 196 "Comp.yacc"
-                               {(yyval.nodeval) = (yyvsp[0].nodeval);}
+                               {(yyval.nodeval) = mknode("ASSIGN",(yyvsp[0].nodeval),NULL);}
 #line 2180 "y.tab.c"
     break;
 
