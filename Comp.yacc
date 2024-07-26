@@ -1,6 +1,5 @@
  %{
-    //#include "Helper.c" // This file contains the mknode function and a modified printtree function, and its required to run the compiler.
-    #include "Stack.c" // This is a file that contans the linked list and stack implementations for part 2 of the project
+    #include "Semantics.c" // This is a file that contans the linked list and stack implementations for part 2 of the project
 %}
 %union {
     int intval;
