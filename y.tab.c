@@ -69,10 +69,9 @@
 /* First part of user prologue.  */
 #line 1 "Comp.yacc"
 
-    //#include "Helper.c" // This file contains the mknode function and a modified printtree function, and its required to run the compiler.
-    #include "Stack.c" // This is a file that contans the linked list and stack implementations for part 2 of the project
+    #include "Semantics.c" // This is a file that contans the linked list and stack implementations for part 2 of the project
 
-#line 76 "y.tab.c"
+#line 75 "y.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -224,7 +223,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 5 "Comp.yacc"
+#line 4 "Comp.yacc"
 
     int intval;
     int* intptr;
@@ -236,7 +235,7 @@ union YYSTYPE
     char* strval;
     node* nodeval;
 
-#line 240 "y.tab.c"
+#line 239 "y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -745,21 +744,21 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    37,    37,    39,    41,    42,    44,    46,    48,    50,
-      53,    53,    55,    56,    58,    60,    61,    64,    65,    67,
-      69,    70,    74,    75,    77,    78,    82,    84,    85,    87,
-      89,    91,    93,    95,    97,    99,   101,   106,   107,   108,
-     110,   111,   112,   113,   115,   116,   117,   118,   122,   123,
-     124,   125,   127,   128,   130,   131,   135,   137,   138,   139,
-     140,   141,   142,   143,   147,   148,   149,   150,   151,   152,
-     153,   154,   155,   156,   157,   158,   160,   161,   162,   163,
-     167,   168,   170,   171,   175,   177,   185,   193,   201,   212,
-     214,   215,   216,   217,   219,   220,   224,   225,   226,   227,
-     228,   229,   230,   231,   232,   235,   236,   237,   238,   239,
-     240,   241,   242,   243,   244,   245,   246,   247,   248,   249,
-     250,   251,   252,   253,   254,   255,   256,   259,   260,   261,
-     262,   263,   264,   265,   266,   267,   268,   269,   270,   271,
-     272,   273
+       0,    36,    36,    38,    40,    41,    43,    45,    47,    49,
+      52,    52,    54,    55,    57,    59,    60,    63,    64,    66,
+      68,    69,    73,    74,    76,    77,    81,    83,    84,    86,
+      88,    90,    92,    94,    96,    98,   100,   105,   106,   107,
+     109,   110,   111,   112,   114,   115,   116,   117,   121,   122,
+     123,   124,   126,   127,   129,   130,   134,   136,   137,   138,
+     139,   140,   141,   142,   146,   147,   148,   149,   150,   151,
+     152,   153,   154,   155,   156,   157,   159,   160,   161,   162,
+     166,   167,   169,   170,   174,   176,   184,   192,   200,   211,
+     213,   214,   215,   216,   218,   219,   223,   224,   225,   226,
+     227,   228,   229,   230,   231,   234,   235,   236,   237,   238,
+     239,   240,   241,   242,   243,   244,   245,   246,   247,   248,
+     249,   250,   251,   252,   253,   254,   255,   258,   259,   260,
+     261,   262,   263,   264,   265,   266,   267,   268,   269,   270,
+     271,   272
 };
 #endif
 
@@ -1612,505 +1611,505 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program: code  */
-#line 37 "Comp.yacc"
+#line 36 "Comp.yacc"
                {(yyval.nodeval) = (yyvsp[0].nodeval); printtree((yyval.nodeval), 0); checktree((yyval.nodeval));}
-#line 1618 "y.tab.c"
+#line 1617 "y.tab.c"
     break;
 
   case 3: /* code: functions  */
-#line 39 "Comp.yacc"
+#line 38 "Comp.yacc"
                  {(yyval.nodeval) = mknode("CODE", (yyvsp[0].nodeval), NULL);}
-#line 1624 "y.tab.c"
+#line 1623 "y.tab.c"
     break;
 
   case 4: /* functions: function functions  */
-#line 41 "Comp.yacc"
+#line 40 "Comp.yacc"
                                {(yyval.nodeval) = mknode("", (yyvsp[-1].nodeval), (yyvsp[0].nodeval));}
-#line 1630 "y.tab.c"
+#line 1629 "y.tab.c"
     break;
 
   case 5: /* functions: function  */
-#line 42 "Comp.yacc"
+#line 41 "Comp.yacc"
                    {(yyval.nodeval) = mknode("", (yyvsp[0].nodeval), NULL);}
-#line 1636 "y.tab.c"
+#line 1635 "y.tab.c"
     break;
 
   case 6: /* function: function_type function_return_type ID '(' function_args ')' function_static function_block  */
-#line 45 "Comp.yacc"
+#line 44 "Comp.yacc"
             {(yyval.nodeval) = mknode("FUNCTION", mknode((yyvsp[-5].strval), mknode("", (yyvsp[-7].nodeval), (yyvsp[-1].nodeval)), mknode("ARGS>>", (yyvsp[-3].nodeval), NULL)), mknode("RETURN", (yyvsp[-6].nodeval), mknode("FUNCTION BLOCK", (yyvsp[0].nodeval), NULL)));}
-#line 1642 "y.tab.c"
+#line 1641 "y.tab.c"
     break;
 
   case 7: /* function: function_type function_return_type ID '(' function_args ')' function_block  */
-#line 47 "Comp.yacc"
+#line 46 "Comp.yacc"
             {(yyval.nodeval) = mknode("FUNCTION", mknode((yyvsp[-4].strval), mknode("", (yyvsp[-6].nodeval), NULL), mknode("ARGS>>", (yyvsp[-2].nodeval), NULL)), mknode("RETURN", (yyvsp[-5].nodeval), mknode("FUNCTION BLOCK", (yyvsp[0].nodeval), NULL)));}
-#line 1648 "y.tab.c"
+#line 1647 "y.tab.c"
     break;
 
   case 8: /* function: function_type function_return_type ID '(' ')' function_static function_block  */
-#line 49 "Comp.yacc"
+#line 48 "Comp.yacc"
             {(yyval.nodeval) = mknode("FUNCTION", mknode((yyvsp[-4].strval), mknode("", (yyvsp[-6].nodeval), (yyvsp[-1].nodeval)), NULL), mknode("RETURN", (yyvsp[-5].nodeval), mknode("FUNCTION BLOCK", (yyvsp[0].nodeval), NULL)));}
-#line 1654 "y.tab.c"
+#line 1653 "y.tab.c"
     break;
 
   case 9: /* function: function_type function_return_type ID '(' ')' function_block  */
-#line 51 "Comp.yacc"
+#line 50 "Comp.yacc"
             {(yyval.nodeval) = mknode("FUNCTION", mknode((yyvsp[-3].strval), mknode("", (yyvsp[-5].nodeval), NULL), NULL), mknode("RETURN", (yyvsp[-4].nodeval), mknode("FUNCTION BLOCK", (yyvsp[0].nodeval), NULL)));}
-#line 1660 "y.tab.c"
+#line 1659 "y.tab.c"
     break;
 
   case 10: /* function_type: PRIVATE  */
-#line 53 "Comp.yacc"
+#line 52 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[0].strval), NULL, NULL);}
-#line 1666 "y.tab.c"
+#line 1665 "y.tab.c"
     break;
 
   case 11: /* function_type: PUBLIC  */
-#line 53 "Comp.yacc"
+#line 52 "Comp.yacc"
                                                                 {(yyval.nodeval) = mknode((yyvsp[0].strval), NULL, NULL);}
-#line 1672 "y.tab.c"
+#line 1671 "y.tab.c"
     break;
 
   case 12: /* function_return_type: param_type  */
-#line 55 "Comp.yacc"
+#line 54 "Comp.yacc"
                                   {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 1678 "y.tab.c"
+#line 1677 "y.tab.c"
     break;
 
   case 13: /* function_return_type: VOID  */
-#line 56 "Comp.yacc"
+#line 55 "Comp.yacc"
                                {(yyval.nodeval) = mknode((yyvsp[0].strval), NULL, NULL);}
-#line 1684 "y.tab.c"
+#line 1683 "y.tab.c"
     break;
 
   case 14: /* function_args: ARGS func_args_decleration  */
-#line 58 "Comp.yacc"
+#line 57 "Comp.yacc"
                                            {(yyval.nodeval) = mknode("", (yyvsp[0].nodeval), NULL);}
-#line 1690 "y.tab.c"
+#line 1689 "y.tab.c"
     break;
 
   case 15: /* func_args_decleration: param_type ':' func_many_id ';' func_args_decleration  */
-#line 60 "Comp.yacc"
+#line 59 "Comp.yacc"
                                                                               {(yyval.nodeval) = mknode("VAR", mknode("", (yyvsp[-4].nodeval), (yyvsp[-2].nodeval)), (yyvsp[0].nodeval));}
-#line 1696 "y.tab.c"
+#line 1695 "y.tab.c"
     break;
 
   case 16: /* func_args_decleration: param_type ':' func_many_id  */
-#line 61 "Comp.yacc"
+#line 60 "Comp.yacc"
                                                       {(yyval.nodeval) = mknode("VAR", (yyvsp[-2].nodeval), (yyvsp[0].nodeval));}
-#line 1702 "y.tab.c"
+#line 1701 "y.tab.c"
     break;
 
   case 17: /* func_many_id: ID ',' func_many_id  */
-#line 64 "Comp.yacc"
+#line 63 "Comp.yacc"
                                    {(yyval.nodeval) = mknode((yyvsp[-2].strval), (yyvsp[0].nodeval), NULL);}
-#line 1708 "y.tab.c"
+#line 1707 "y.tab.c"
     break;
 
   case 18: /* func_many_id: ID  */
-#line 65 "Comp.yacc"
+#line 64 "Comp.yacc"
                      {(yyval.nodeval) = mknode((yyvsp[0].strval), NULL, NULL);}
-#line 1714 "y.tab.c"
+#line 1713 "y.tab.c"
     break;
 
   case 19: /* function_static: ':' STATIC  */
-#line 67 "Comp.yacc"
+#line 66 "Comp.yacc"
                              {(yyval.nodeval) = mknode((yyvsp[0].strval), NULL, NULL);}
-#line 1720 "y.tab.c"
+#line 1719 "y.tab.c"
     break;
 
   case 20: /* function_block: '{' block_contents '}'  */
-#line 69 "Comp.yacc"
+#line 68 "Comp.yacc"
                                         {(yyval.nodeval) = (yyvsp[-1].nodeval);}
-#line 1726 "y.tab.c"
+#line 1725 "y.tab.c"
     break;
 
   case 21: /* function_block: '{' '}'  */
-#line 70 "Comp.yacc"
+#line 69 "Comp.yacc"
                           {(yyval.nodeval) = NULL;}
-#line 1732 "y.tab.c"
+#line 1731 "y.tab.c"
     break;
 
   case 22: /* function_call: ID '(' function_params ')'  */
-#line 74 "Comp.yacc"
+#line 73 "Comp.yacc"
                                            {(yyval.nodeval) = mknode("FUNCTION CALL", mknode((yyvsp[-3].strval), NULL, NULL), (yyvsp[-1].nodeval));}
-#line 1738 "y.tab.c"
+#line 1737 "y.tab.c"
     break;
 
   case 23: /* function_call: ID '(' ')'  */
-#line 75 "Comp.yacc"
+#line 74 "Comp.yacc"
                              {(yyval.nodeval) = mknode("FUNCTION CALL", mknode((yyvsp[-2].strval), NULL, NULL), NULL);}
-#line 1744 "y.tab.c"
+#line 1743 "y.tab.c"
     break;
 
   case 24: /* function_params: expression ',' function_params  */
-#line 77 "Comp.yacc"
+#line 76 "Comp.yacc"
                                                  {(yyval.nodeval) = mknode("EXPRESSION", (yyvsp[-2].nodeval), (yyvsp[0].nodeval));}
-#line 1750 "y.tab.c"
+#line 1749 "y.tab.c"
     break;
 
   case 25: /* function_params: expression  */
-#line 78 "Comp.yacc"
+#line 77 "Comp.yacc"
                              {(yyval.nodeval) = mknode("EXPRESSION", (yyvsp[0].nodeval), NULL);}
-#line 1756 "y.tab.c"
+#line 1755 "y.tab.c"
     break;
 
   case 26: /* do_while_statement: DO block WHILE '(' expression ')' ';'  */
-#line 82 "Comp.yacc"
+#line 81 "Comp.yacc"
                                                            {(yyval.nodeval) = mknode("DO WHILE", (yyvsp[-5].nodeval), (yyvsp[-2].nodeval));}
-#line 1762 "y.tab.c"
+#line 1761 "y.tab.c"
     break;
 
   case 27: /* while_statement: WHILE '(' expression ')' statement  */
-#line 84 "Comp.yacc"
+#line 83 "Comp.yacc"
                                                      {(yyval.nodeval) = mknode((yyvsp[-4].strval), (yyvsp[-2].nodeval), (yyvsp[0].nodeval));}
-#line 1768 "y.tab.c"
+#line 1767 "y.tab.c"
     break;
 
   case 28: /* while_statement: WHILE '(' expression ')' block  */
-#line 85 "Comp.yacc"
+#line 84 "Comp.yacc"
                                                  {(yyval.nodeval) = mknode((yyvsp[-4].strval), (yyvsp[-2].nodeval), (yyvsp[0].nodeval));}
-#line 1774 "y.tab.c"
+#line 1773 "y.tab.c"
     break;
 
   case 29: /* for_statement: FOR '(' for_init ';' expression ';' update ')' block  */
-#line 88 "Comp.yacc"
+#line 87 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[-8].strval), mknode("ASSIGN", (yyvsp[-6].nodeval), mknode("EXPRESSION", (yyvsp[-4].nodeval), mknode("UPDATE", (yyvsp[-2].nodeval), NULL))), mknode("FOR BLOCK", (yyvsp[0].nodeval), NULL));}
-#line 1780 "y.tab.c"
+#line 1779 "y.tab.c"
     break;
 
   case 30: /* for_statement: FOR '(' for_init ';' expression ';' ')' block  */
-#line 90 "Comp.yacc"
+#line 89 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[-7].strval), mknode("ASSIGN", (yyvsp[-5].nodeval), mknode("EXPRESSION", (yyvsp[-3].nodeval), NULL)), mknode("FOR BLOCK", (yyvsp[0].nodeval), NULL));}
-#line 1786 "y.tab.c"
+#line 1785 "y.tab.c"
     break;
 
   case 31: /* for_statement: FOR '(' ';' expression ';' update ')' block  */
-#line 92 "Comp.yacc"
+#line 91 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[-7].strval), mknode("EXPRESSION", (yyvsp[-4].nodeval), mknode("UPDATE", (yyvsp[-2].nodeval), NULL)), mknode("FOR BLOCK", (yyvsp[0].nodeval), NULL));}
-#line 1792 "y.tab.c"
+#line 1791 "y.tab.c"
     break;
 
   case 32: /* for_statement: FOR '(' ';' expression ';' ')' block  */
-#line 94 "Comp.yacc"
+#line 93 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[-6].strval), mknode("EXPRESSION", (yyvsp[-3].nodeval), NULL), mknode("FOR BLOCK", (yyvsp[0].nodeval), NULL));}
-#line 1798 "y.tab.c"
+#line 1797 "y.tab.c"
     break;
 
   case 33: /* for_statement: FOR '(' for_init ';' expression ';' update ')' statement  */
-#line 96 "Comp.yacc"
+#line 95 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[-8].strval), mknode("ASSIGN", (yyvsp[-6].nodeval), mknode("EXPRESSION", (yyvsp[-4].nodeval), mknode("UPDATE", (yyvsp[-2].nodeval), NULL))), mknode("FOR BLOCK", (yyvsp[0].nodeval), NULL));}
-#line 1804 "y.tab.c"
+#line 1803 "y.tab.c"
     break;
 
   case 34: /* for_statement: FOR '(' for_init ';' expression ';' ')' statement  */
-#line 98 "Comp.yacc"
+#line 97 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[-7].strval), mknode("ASSIGN", (yyvsp[-5].nodeval), mknode("EXPRESSION", (yyvsp[-3].nodeval), NULL)), mknode("FOR BLOCK", (yyvsp[0].nodeval), NULL));}
-#line 1810 "y.tab.c"
+#line 1809 "y.tab.c"
     break;
 
   case 35: /* for_statement: FOR '(' ';' expression ';' update ')' statement  */
-#line 100 "Comp.yacc"
+#line 99 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[-7].strval), mknode("EXPRESSION", (yyvsp[-4].nodeval), mknode("UPDATE", (yyvsp[-2].nodeval), NULL)), mknode("FOR BLOCK", (yyvsp[0].nodeval), NULL));}
-#line 1816 "y.tab.c"
+#line 1815 "y.tab.c"
     break;
 
   case 36: /* for_statement: FOR '(' ';' expression ';' ')' statement  */
-#line 102 "Comp.yacc"
+#line 101 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[-6].strval), mknode("EXPRESSION", (yyvsp[-3].nodeval), NULL), mknode("FOR BLOCK", (yyvsp[0].nodeval), NULL));}
-#line 1822 "y.tab.c"
+#line 1821 "y.tab.c"
     break;
 
   case 37: /* for_init: VAR param_type ':' for_init_many  */
-#line 106 "Comp.yacc"
+#line 105 "Comp.yacc"
                                             {(yyval.nodeval) = mknode("", (yyvsp[-2].nodeval), (yyvsp[0].nodeval));}
-#line 1828 "y.tab.c"
+#line 1827 "y.tab.c"
     break;
 
   case 38: /* for_init: MULT ID ASSIGN expression  */
-#line 107 "Comp.yacc"
+#line 106 "Comp.yacc"
                                         {(yyval.nodeval) = mknode("", mknode((yyvsp[-2].strval), (yyvsp[0].nodeval), NULL), NULL);}
-#line 1834 "y.tab.c"
+#line 1833 "y.tab.c"
     break;
 
   case 39: /* for_init: for_init_many  */
-#line 108 "Comp.yacc"
+#line 107 "Comp.yacc"
                             {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 1840 "y.tab.c"
+#line 1839 "y.tab.c"
     break;
 
   case 40: /* for_init_many: ID assignment ',' for_init_many  */
-#line 110 "Comp.yacc"
+#line 109 "Comp.yacc"
                                                 {(yyval.nodeval) = mknode((yyvsp[-3].strval), (yyvsp[-2].nodeval), (yyvsp[0].nodeval));}
-#line 1846 "y.tab.c"
+#line 1845 "y.tab.c"
     break;
 
   case 41: /* for_init_many: ID ',' for_init_many  */
-#line 111 "Comp.yacc"
+#line 110 "Comp.yacc"
                                  {(yyval.nodeval) = mknode((yyvsp[-2].strval), (yyvsp[0].nodeval), NULL);}
-#line 1852 "y.tab.c"
+#line 1851 "y.tab.c"
     break;
 
   case 42: /* for_init_many: ID assignment  */
-#line 112 "Comp.yacc"
+#line 111 "Comp.yacc"
                           {(yyval.nodeval) = mknode((yyvsp[-1].strval), (yyvsp[0].nodeval), NULL);}
-#line 1858 "y.tab.c"
+#line 1857 "y.tab.c"
     break;
 
   case 43: /* for_init_many: ID  */
-#line 113 "Comp.yacc"
+#line 112 "Comp.yacc"
                {(yyval.nodeval) = mknode((yyvsp[0].strval), NULL, NULL);}
-#line 1864 "y.tab.c"
+#line 1863 "y.tab.c"
     break;
 
   case 44: /* update: expression ',' update  */
-#line 115 "Comp.yacc"
+#line 114 "Comp.yacc"
                                {(yyval.nodeval) = mknode("", (yyvsp[-2].nodeval), (yyvsp[0].nodeval));}
-#line 1870 "y.tab.c"
+#line 1869 "y.tab.c"
     break;
 
   case 45: /* update: expression  */
-#line 116 "Comp.yacc"
+#line 115 "Comp.yacc"
                      {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 1876 "y.tab.c"
+#line 1875 "y.tab.c"
     break;
 
   case 46: /* update: ID assignment ',' update  */
-#line 117 "Comp.yacc"
+#line 116 "Comp.yacc"
                                    {(yyval.nodeval) = mknode(concat("ASSIGN  ",(yyvsp[-3].strval)), (yyvsp[-2].nodeval), (yyvsp[0].nodeval));}
-#line 1882 "y.tab.c"
+#line 1881 "y.tab.c"
     break;
 
   case 47: /* update: ID assignment  */
-#line 118 "Comp.yacc"
+#line 117 "Comp.yacc"
                         {(yyval.nodeval) = mknode(concat("ASSIGN  ",(yyvsp[-1].strval)), (yyvsp[0].nodeval), NULL);}
-#line 1888 "y.tab.c"
+#line 1887 "y.tab.c"
     break;
 
   case 48: /* if_statement: IF '(' expression ')' statement  */
-#line 122 "Comp.yacc"
+#line 121 "Comp.yacc"
                                                               {(yyval.nodeval) = mknode((yyvsp[-4].strval), mknode("CONDITION",(yyvsp[-2].nodeval), NULL), (yyvsp[0].nodeval));}
-#line 1894 "y.tab.c"
+#line 1893 "y.tab.c"
     break;
 
   case 49: /* if_statement: IF '(' expression ')' statement else_statement  */
-#line 123 "Comp.yacc"
+#line 122 "Comp.yacc"
                                                                  {(yyval.nodeval) = mknode("", mknode((yyvsp[-5].strval), mknode("CONDITION",(yyvsp[-3].nodeval), NULL), (yyvsp[-1].nodeval)), mknode("ELSE", (yyvsp[0].nodeval), NULL));}
-#line 1900 "y.tab.c"
+#line 1899 "y.tab.c"
     break;
 
   case 50: /* if_statement: IF '(' expression ')' block  */
-#line 124 "Comp.yacc"
+#line 123 "Comp.yacc"
                                                              {(yyval.nodeval) = mknode((yyvsp[-4].strval), mknode("CONDITION",(yyvsp[-2].nodeval), NULL), (yyvsp[0].nodeval));}
-#line 1906 "y.tab.c"
+#line 1905 "y.tab.c"
     break;
 
   case 51: /* if_statement: IF '(' expression ')' block else_statement  */
-#line 125 "Comp.yacc"
+#line 124 "Comp.yacc"
                                                              {(yyval.nodeval) = mknode("", mknode((yyvsp[-5].strval), mknode("CONDITION",(yyvsp[-3].nodeval), NULL), (yyvsp[-1].nodeval)), mknode("ELSE", (yyvsp[0].nodeval), NULL));}
-#line 1912 "y.tab.c"
+#line 1911 "y.tab.c"
     break;
 
   case 52: /* else_statement: ELSE statement  */
-#line 127 "Comp.yacc"
+#line 126 "Comp.yacc"
                                 {(yyval.nodeval) = mknode("", (yyvsp[0].nodeval), NULL);}
-#line 1918 "y.tab.c"
+#line 1917 "y.tab.c"
     break;
 
   case 53: /* else_statement: ELSE block  */
-#line 128 "Comp.yacc"
+#line 127 "Comp.yacc"
                              {(yyval.nodeval) = mknode("", (yyvsp[0].nodeval), NULL);}
-#line 1924 "y.tab.c"
+#line 1923 "y.tab.c"
     break;
 
   case 54: /* return_statement: RETURN expression ';'  */
-#line 130 "Comp.yacc"
+#line 129 "Comp.yacc"
                                          {(yyval.nodeval) = mknode((yyvsp[-2].strval), mknode("EXPRESSION", (yyvsp[-1].nodeval), NULL), NULL);}
-#line 1930 "y.tab.c"
+#line 1929 "y.tab.c"
     break;
 
   case 55: /* return_statement: RETURN ';'  */
-#line 131 "Comp.yacc"
+#line 130 "Comp.yacc"
                               {(yyval.nodeval) = mknode((yyvsp[-1].strval), NULL, NULL);}
-#line 1936 "y.tab.c"
+#line 1935 "y.tab.c"
     break;
 
   case 56: /* block: '{' block_contents '}'  */
-#line 135 "Comp.yacc"
+#line 134 "Comp.yacc"
                                {(yyval.nodeval) = mknode("BLOCK", (yyvsp[-1].nodeval), NULL);}
-#line 1942 "y.tab.c"
+#line 1941 "y.tab.c"
     break;
 
   case 57: /* block_contents: declarations functions statements  */
-#line 137 "Comp.yacc"
+#line 136 "Comp.yacc"
                                                    {(yyval.nodeval) = mknode("", mknode("", (yyvsp[-2].nodeval), (yyvsp[-1].nodeval)), (yyvsp[0].nodeval));}
-#line 1948 "y.tab.c"
+#line 1947 "y.tab.c"
     break;
 
   case 58: /* block_contents: declarations functions  */
-#line 138 "Comp.yacc"
+#line 137 "Comp.yacc"
                                          {(yyval.nodeval) = mknode("", (yyvsp[-1].nodeval), (yyvsp[0].nodeval));}
-#line 1954 "y.tab.c"
+#line 1953 "y.tab.c"
     break;
 
   case 59: /* block_contents: declarations statements  */
-#line 139 "Comp.yacc"
+#line 138 "Comp.yacc"
                                           {(yyval.nodeval) = mknode("", (yyvsp[-1].nodeval), (yyvsp[0].nodeval));}
-#line 1960 "y.tab.c"
+#line 1959 "y.tab.c"
     break;
 
   case 60: /* block_contents: functions statements  */
-#line 140 "Comp.yacc"
+#line 139 "Comp.yacc"
                                        {(yyval.nodeval) = mknode("", (yyvsp[-1].nodeval), (yyvsp[0].nodeval));}
-#line 1966 "y.tab.c"
+#line 1965 "y.tab.c"
     break;
 
   case 61: /* block_contents: declarations  */
-#line 141 "Comp.yacc"
+#line 140 "Comp.yacc"
                                {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 1972 "y.tab.c"
+#line 1971 "y.tab.c"
     break;
 
   case 62: /* block_contents: functions  */
-#line 142 "Comp.yacc"
+#line 141 "Comp.yacc"
                             {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 1978 "y.tab.c"
+#line 1977 "y.tab.c"
     break;
 
   case 63: /* block_contents: statements  */
-#line 143 "Comp.yacc"
+#line 142 "Comp.yacc"
                              {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 1984 "y.tab.c"
+#line 1983 "y.tab.c"
     break;
 
   case 64: /* statement: if_statement  */
-#line 147 "Comp.yacc"
+#line 146 "Comp.yacc"
                          {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 1990 "y.tab.c"
+#line 1989 "y.tab.c"
     break;
 
   case 65: /* statement: for_statement  */
-#line 148 "Comp.yacc"
+#line 147 "Comp.yacc"
                         {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 1996 "y.tab.c"
+#line 1995 "y.tab.c"
     break;
 
   case 66: /* statement: while_statement  */
-#line 149 "Comp.yacc"
+#line 148 "Comp.yacc"
                           {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 2002 "y.tab.c"
+#line 2001 "y.tab.c"
     break;
 
   case 67: /* statement: do_while_statement  */
-#line 150 "Comp.yacc"
+#line 149 "Comp.yacc"
                              {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 2008 "y.tab.c"
+#line 2007 "y.tab.c"
     break;
 
   case 68: /* statement: COMMENT  */
-#line 151 "Comp.yacc"
+#line 150 "Comp.yacc"
                   {(yyval.nodeval) = mknode((yyvsp[0].strval), NULL, NULL);}
-#line 2014 "y.tab.c"
+#line 2013 "y.tab.c"
     break;
 
   case 69: /* statement: expression ';'  */
-#line 152 "Comp.yacc"
+#line 151 "Comp.yacc"
                          {(yyval.nodeval) = (yyvsp[-1].nodeval);}
-#line 2020 "y.tab.c"
+#line 2019 "y.tab.c"
     break;
 
   case 70: /* statement: return_statement  */
-#line 153 "Comp.yacc"
+#line 152 "Comp.yacc"
                            {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 2026 "y.tab.c"
+#line 2025 "y.tab.c"
     break;
 
   case 71: /* statement: '{' '}'  */
-#line 154 "Comp.yacc"
+#line 153 "Comp.yacc"
                   {(yyval.nodeval) = NULL;}
-#line 2032 "y.tab.c"
+#line 2031 "y.tab.c"
     break;
 
   case 72: /* statement: ID assignment ';'  */
-#line 155 "Comp.yacc"
+#line 154 "Comp.yacc"
                             {(yyval.nodeval) = mknode("ID ASSIGN", mknode((yyvsp[-2].strval), NULL, NULL), (yyvsp[-1].nodeval));}
-#line 2038 "y.tab.c"
+#line 2037 "y.tab.c"
     break;
 
   case 73: /* statement: MULT ID assignment ';'  */
-#line 156 "Comp.yacc"
+#line 155 "Comp.yacc"
                                  {(yyval.nodeval) = mknode("ASSIGN", mknode((yyvsp[-2].strval), NULL, NULL), (yyvsp[-1].nodeval));}
-#line 2044 "y.tab.c"
+#line 2043 "y.tab.c"
     break;
 
   case 74: /* statement: ID '[' expression ']' ASSIGN CHAR_VAL ';'  */
-#line 157 "Comp.yacc"
+#line 156 "Comp.yacc"
                                                     {(yyval.nodeval) = mknode("ASSIGN[]", mknode("ID", mknode((yyvsp[-6].strval), NULL, NULL), (yyvsp[-4].nodeval)), mknode("ASSIGN", mknode((yyvsp[-1].strval), NULL, NULL), NULL));}
-#line 2050 "y.tab.c"
+#line 2049 "y.tab.c"
     break;
 
   case 75: /* statement: ID '[' expression ']' ASSIGN ID ';'  */
-#line 158 "Comp.yacc"
+#line 157 "Comp.yacc"
                                               {(yyval.nodeval) = mknode("ASSIGN[]", mknode("ID", mknode((yyvsp[-6].strval), NULL, NULL), (yyvsp[-4].nodeval)), mknode("ASSIGN", mknode((yyvsp[-1].strval), NULL, NULL), NULL));}
-#line 2056 "y.tab.c"
+#line 2055 "y.tab.c"
     break;
 
   case 76: /* statements: statement statements  */
-#line 160 "Comp.yacc"
+#line 159 "Comp.yacc"
                                   {(yyval.nodeval) = mknode("", (yyvsp[-1].nodeval), (yyvsp[0].nodeval));}
-#line 2062 "y.tab.c"
+#line 2061 "y.tab.c"
     break;
 
   case 77: /* statements: statement  */
-#line 161 "Comp.yacc"
+#line 160 "Comp.yacc"
                     {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 2068 "y.tab.c"
+#line 2067 "y.tab.c"
     break;
 
   case 78: /* statements: block statements  */
-#line 162 "Comp.yacc"
+#line 161 "Comp.yacc"
                            {(yyval.nodeval) = mknode("", (yyvsp[-1].nodeval), (yyvsp[0].nodeval));}
-#line 2074 "y.tab.c"
+#line 2073 "y.tab.c"
     break;
 
   case 79: /* statements: block  */
-#line 163 "Comp.yacc"
+#line 162 "Comp.yacc"
                 {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 2080 "y.tab.c"
+#line 2079 "y.tab.c"
     break;
 
   case 80: /* declarations: declaration declarations  */
-#line 167 "Comp.yacc"
+#line 166 "Comp.yacc"
                                         {(yyval.nodeval) = mknode("DECLERATION", (yyvsp[-1].nodeval), (yyvsp[0].nodeval));}
-#line 2086 "y.tab.c"
+#line 2085 "y.tab.c"
     break;
 
   case 81: /* declarations: declaration  */
-#line 168 "Comp.yacc"
+#line 167 "Comp.yacc"
                       {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 2092 "y.tab.c"
+#line 2091 "y.tab.c"
     break;
 
   case 82: /* declaration: var_declaration  */
-#line 170 "Comp.yacc"
+#line 169 "Comp.yacc"
                               {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 2098 "y.tab.c"
+#line 2097 "y.tab.c"
     break;
 
   case 83: /* declaration: string_declaration  */
-#line 171 "Comp.yacc"
+#line 170 "Comp.yacc"
                              {(yyval.nodeval) = (yyvsp[0].nodeval);}
-#line 2104 "y.tab.c"
+#line 2103 "y.tab.c"
     break;
 
   case 84: /* string_declaration: STRING many_string ';'  */
-#line 175 "Comp.yacc"
+#line 174 "Comp.yacc"
                                              {(yyval.nodeval) = mknode("STRING", (yyvsp[-1].nodeval), NULL);}
-#line 2110 "y.tab.c"
+#line 2109 "y.tab.c"
     break;
 
   case 85: /* many_string: ID '[' INT_VAL ']' assignment ',' many_string  */
-#line 178 "Comp.yacc"
+#line 177 "Comp.yacc"
                 {(yyval.nodeval) = mknode("", 
                                 mknode("", 
                                         mknode(concat((yyvsp[-6].strval), concat(concat(" [",(yyvsp[-4].strval)),"]")), 
@@ -2118,11 +2117,11 @@ yyreduce:
                                                 mknode((yyvsp[-4].strval), NULL, NULL)),
                                         mknode("", (yyvsp[-2].nodeval), NULL)), 
                                 mknode("", (yyvsp[0].nodeval), NULL));}
-#line 2122 "y.tab.c"
+#line 2121 "y.tab.c"
     break;
 
   case 86: /* many_string: ID '[' INT_VAL ']' assignment  */
-#line 186 "Comp.yacc"
+#line 185 "Comp.yacc"
                 {(yyval.nodeval) = mknode("", 
                                 mknode("", 
                                         mknode(concat((yyvsp[-4].strval), concat(concat(" [",(yyvsp[-2].strval)),"]")), 
@@ -2130,11 +2129,11 @@ yyreduce:
                                                 mknode((yyvsp[-2].strval), NULL, NULL)),
                                         mknode("", (yyvsp[0].nodeval), NULL)), 
                                 mknode("", NULL, NULL));}
-#line 2134 "y.tab.c"
+#line 2133 "y.tab.c"
     break;
 
   case 87: /* many_string: ID '[' INT_VAL ']' ',' many_string  */
-#line 194 "Comp.yacc"
+#line 193 "Comp.yacc"
                 {(yyval.nodeval) = mknode("", 
                                 mknode("", 
                                         mknode(concat((yyvsp[-5].strval), concat(concat(" [",(yyvsp[-3].strval)),"]")), 
@@ -2142,11 +2141,11 @@ yyreduce:
                                                 mknode((yyvsp[-3].strval), NULL, NULL)),
                                         mknode("", NULL, NULL)), 
                                 mknode("", (yyvsp[0].nodeval), NULL));}
-#line 2146 "y.tab.c"
+#line 2145 "y.tab.c"
     break;
 
   case 88: /* many_string: ID '[' INT_VAL ']'  */
-#line 202 "Comp.yacc"
+#line 201 "Comp.yacc"
                 {(yyval.nodeval) = mknode("", 
                                 mknode("", 
                                         mknode(concat((yyvsp[-3].strval), concat(concat(" [",(yyvsp[-1].strval)),"]")), 
@@ -2154,329 +2153,329 @@ yyreduce:
                                                 mknode((yyvsp[-1].strval), NULL, NULL)),
                                         mknode("", NULL, NULL)), 
                                 mknode("", NULL, NULL));}
-#line 2158 "y.tab.c"
+#line 2157 "y.tab.c"
     break;
 
   case 89: /* var_declaration: VAR param_type ':' many_id ';'  */
-#line 212 "Comp.yacc"
+#line 211 "Comp.yacc"
                                                  {(yyval.nodeval) = mknode("VAR", (yyvsp[-3].nodeval), (yyvsp[-1].nodeval));}
-#line 2164 "y.tab.c"
+#line 2163 "y.tab.c"
     break;
 
   case 90: /* many_id: ID assignment ',' many_id  */
-#line 214 "Comp.yacc"
+#line 213 "Comp.yacc"
                                     {(yyval.nodeval) = mknode((yyvsp[-3].strval), (yyvsp[-2].nodeval), (yyvsp[0].nodeval));}
-#line 2170 "y.tab.c"
+#line 2169 "y.tab.c"
     break;
 
   case 91: /* many_id: ID ',' many_id  */
-#line 215 "Comp.yacc"
+#line 214 "Comp.yacc"
                            {(yyval.nodeval) = mknode((yyvsp[-2].strval), NULL, (yyvsp[0].nodeval));}
-#line 2176 "y.tab.c"
+#line 2175 "y.tab.c"
     break;
 
   case 92: /* many_id: ID assignment  */
-#line 216 "Comp.yacc"
+#line 215 "Comp.yacc"
                           {(yyval.nodeval) = mknode((yyvsp[-1].strval), (yyvsp[0].nodeval), NULL);}
-#line 2182 "y.tab.c"
+#line 2181 "y.tab.c"
     break;
 
   case 93: /* many_id: ID  */
-#line 217 "Comp.yacc"
+#line 216 "Comp.yacc"
                {(yyval.nodeval) = mknode((yyvsp[0].strval), NULL, NULL);}
-#line 2188 "y.tab.c"
+#line 2187 "y.tab.c"
     break;
 
   case 94: /* assignment: ASSIGN expression  */
-#line 219 "Comp.yacc"
+#line 218 "Comp.yacc"
                                {(yyval.nodeval) = mknode("ASSIGN",mknode("EXPRESSION", (yyvsp[0].nodeval), NULL),NULL);}
-#line 2194 "y.tab.c"
+#line 2193 "y.tab.c"
     break;
 
   case 95: /* assignment: ASSIGN ADDRESS ID '[' expression ']'  */
-#line 220 "Comp.yacc"
+#line 219 "Comp.yacc"
                                                {(yyval.nodeval) = mknode(concat("&",(yyvsp[-3].strval)), (yyvsp[-1].nodeval), NULL);}
-#line 2200 "y.tab.c"
+#line 2199 "y.tab.c"
     break;
 
   case 96: /* param_type: INT  */
-#line 224 "Comp.yacc"
+#line 223 "Comp.yacc"
                  {(yyval.nodeval) = mknode((yyvsp[0].strval),NULL,NULL);}
-#line 2206 "y.tab.c"
+#line 2205 "y.tab.c"
     break;
 
   case 97: /* param_type: FLOAT  */
-#line 225 "Comp.yacc"
+#line 224 "Comp.yacc"
                      {(yyval.nodeval) = mknode((yyvsp[0].strval),NULL,NULL);}
-#line 2212 "y.tab.c"
+#line 2211 "y.tab.c"
     break;
 
   case 98: /* param_type: DOUBLE  */
-#line 226 "Comp.yacc"
+#line 225 "Comp.yacc"
                       {(yyval.nodeval) = mknode((yyvsp[0].strval),NULL,NULL);}
-#line 2218 "y.tab.c"
+#line 2217 "y.tab.c"
     break;
 
   case 99: /* param_type: CHAR  */
-#line 227 "Comp.yacc"
+#line 226 "Comp.yacc"
                     {(yyval.nodeval) = mknode((yyvsp[0].strval),NULL,NULL);}
-#line 2224 "y.tab.c"
+#line 2223 "y.tab.c"
     break;
 
   case 100: /* param_type: INT_PTR  */
-#line 228 "Comp.yacc"
+#line 227 "Comp.yacc"
                        {(yyval.nodeval) = mknode((yyvsp[0].strval),NULL,NULL);}
-#line 2230 "y.tab.c"
+#line 2229 "y.tab.c"
     break;
 
   case 101: /* param_type: FLOAT_PTR  */
-#line 229 "Comp.yacc"
+#line 228 "Comp.yacc"
                          {(yyval.nodeval) = mknode((yyvsp[0].strval),NULL,NULL);}
-#line 2236 "y.tab.c"
+#line 2235 "y.tab.c"
     break;
 
   case 102: /* param_type: DOUBLE_PTR  */
-#line 230 "Comp.yacc"
+#line 229 "Comp.yacc"
                           {(yyval.nodeval) = mknode((yyvsp[0].strval),NULL,NULL);}
-#line 2242 "y.tab.c"
+#line 2241 "y.tab.c"
     break;
 
   case 103: /* param_type: CHAR_PTR  */
-#line 231 "Comp.yacc"
+#line 230 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[0].strval),NULL,NULL);}
-#line 2248 "y.tab.c"
+#line 2247 "y.tab.c"
     break;
 
   case 104: /* param_type: BOOL  */
-#line 232 "Comp.yacc"
+#line 231 "Comp.yacc"
                     {(yyval.nodeval) = mknode((yyvsp[0].strval),NULL,NULL);}
-#line 2254 "y.tab.c"
+#line 2253 "y.tab.c"
     break;
 
   case 105: /* expression: NULL_VALUE  */
-#line 235 "Comp.yacc"
+#line 234 "Comp.yacc"
                         {(yyval.nodeval) = mknode((yyvsp[0].strval), NULL, NULL);}
-#line 2260 "y.tab.c"
+#line 2259 "y.tab.c"
     break;
 
   case 106: /* expression: ADDRESS ID  */
-#line 236 "Comp.yacc"
+#line 235 "Comp.yacc"
                          {(yyval.nodeval) = mknode("&", mknode((yyvsp[0].strval),NULL,NULL), NULL);}
-#line 2266 "y.tab.c"
+#line 2265 "y.tab.c"
     break;
 
   case 107: /* expression: MULT ID  */
-#line 237 "Comp.yacc"
+#line 236 "Comp.yacc"
                       {(yyval.nodeval) = mknode("*", mknode((yyvsp[0].strval),NULL,NULL), NULL);}
-#line 2272 "y.tab.c"
+#line 2271 "y.tab.c"
     break;
 
   case 108: /* expression: NOT expression  */
-#line 238 "Comp.yacc"
+#line 237 "Comp.yacc"
                              {(yyval.nodeval) = mknode("! (not)", (yyvsp[0].nodeval), NULL);}
-#line 2278 "y.tab.c"
+#line 2277 "y.tab.c"
     break;
 
   case 109: /* expression: expression LESSER expression  */
-#line 239 "Comp.yacc"
+#line 238 "Comp.yacc"
                                            {(yyval.nodeval) = mknode("<", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2284 "y.tab.c"
+#line 2283 "y.tab.c"
     break;
 
   case 110: /* expression: expression LESSER_EQ expression  */
-#line 240 "Comp.yacc"
+#line 239 "Comp.yacc"
                                               {(yyval.nodeval) = mknode("<=", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2290 "y.tab.c"
+#line 2289 "y.tab.c"
     break;
 
   case 111: /* expression: expression GREATER expression  */
-#line 241 "Comp.yacc"
+#line 240 "Comp.yacc"
                                             {(yyval.nodeval) = mknode(">", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2296 "y.tab.c"
+#line 2295 "y.tab.c"
     break;
 
   case 112: /* expression: expression GREATER_EQ expression  */
-#line 242 "Comp.yacc"
+#line 241 "Comp.yacc"
                                                {(yyval.nodeval) = mknode(">=", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2302 "y.tab.c"
+#line 2301 "y.tab.c"
     break;
 
   case 113: /* expression: expression EQUAL expression  */
-#line 243 "Comp.yacc"
+#line 242 "Comp.yacc"
                                           {(yyval.nodeval) = mknode("==", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2308 "y.tab.c"
+#line 2307 "y.tab.c"
     break;
 
   case 114: /* expression: expression NOT_EQ expression  */
-#line 244 "Comp.yacc"
+#line 243 "Comp.yacc"
                                            {(yyval.nodeval) = mknode("!=", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2314 "y.tab.c"
+#line 2313 "y.tab.c"
     break;
 
   case 115: /* expression: expression OR expression  */
-#line 245 "Comp.yacc"
+#line 244 "Comp.yacc"
                                        {(yyval.nodeval) = mknode("||", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2320 "y.tab.c"
+#line 2319 "y.tab.c"
     break;
 
   case 116: /* expression: expression AND expression  */
-#line 246 "Comp.yacc"
+#line 245 "Comp.yacc"
                                         {(yyval.nodeval) = mknode("&&", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2326 "y.tab.c"
+#line 2325 "y.tab.c"
     break;
 
   case 117: /* expression: expression ADD expression  */
-#line 247 "Comp.yacc"
+#line 246 "Comp.yacc"
                                         {(yyval.nodeval) = mknode("+", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2332 "y.tab.c"
+#line 2331 "y.tab.c"
     break;
 
   case 118: /* expression: expression SUB expression  */
-#line 248 "Comp.yacc"
+#line 247 "Comp.yacc"
                                         {(yyval.nodeval) = mknode("-", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2338 "y.tab.c"
+#line 2337 "y.tab.c"
     break;
 
   case 119: /* expression: expression MULT expression  */
-#line 249 "Comp.yacc"
+#line 248 "Comp.yacc"
                                          {(yyval.nodeval) = mknode("*", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2344 "y.tab.c"
+#line 2343 "y.tab.c"
     break;
 
   case 120: /* expression: expression DIVIDE expression  */
-#line 250 "Comp.yacc"
+#line 249 "Comp.yacc"
                                            {(yyval.nodeval) = mknode("/", mknode("EXPRESSION", (yyvsp[-2].nodeval), NULL), mknode("EXPRESSION", (yyvsp[0].nodeval), NULL));}
-#line 2350 "y.tab.c"
+#line 2349 "y.tab.c"
     break;
 
   case 121: /* expression: MULT '(' expression ')'  */
-#line 251 "Comp.yacc"
+#line 250 "Comp.yacc"
                                       {(yyval.nodeval) = mknode("*( )", mknode("EXPRESSION", (yyvsp[-1].nodeval), NULL), NULL);}
-#line 2356 "y.tab.c"
+#line 2355 "y.tab.c"
     break;
 
   case 122: /* expression: ADDRESS '(' ID ')'  */
-#line 252 "Comp.yacc"
+#line 251 "Comp.yacc"
                                  {(yyval.nodeval) = mknode("&( )", mknode("EXPRESSION", mknode((yyvsp[-1].strval), NULL, NULL), NULL), NULL);}
-#line 2362 "y.tab.c"
+#line 2361 "y.tab.c"
     break;
 
   case 123: /* expression: '(' expression ')'  */
-#line 253 "Comp.yacc"
+#line 252 "Comp.yacc"
                                  {(yyval.nodeval) = mknode("( )", mknode("EXPRESSION", (yyvsp[-1].nodeval), NULL), NULL);}
-#line 2368 "y.tab.c"
+#line 2367 "y.tab.c"
     break;
 
   case 124: /* expression: '|' expression '|'  */
-#line 254 "Comp.yacc"
+#line 253 "Comp.yacc"
                                  {(yyval.nodeval) = mknode("| |", mknode("EXPRESSION", (yyvsp[-1].nodeval), NULL), NULL);}
-#line 2374 "y.tab.c"
+#line 2373 "y.tab.c"
     break;
 
   case 125: /* expression: value  */
-#line 255 "Comp.yacc"
+#line 254 "Comp.yacc"
                     {(yyval.nodeval) = mknode("VALUE", (yyvsp[0].nodeval), NULL);}
-#line 2380 "y.tab.c"
+#line 2379 "y.tab.c"
     break;
 
   case 126: /* expression: function_call  */
-#line 256 "Comp.yacc"
+#line 255 "Comp.yacc"
                             {(yyval.nodeval) = mknode("", (yyvsp[0].nodeval), NULL);}
-#line 2386 "y.tab.c"
+#line 2385 "y.tab.c"
     break;
 
   case 127: /* value: INT_VAL  */
-#line 259 "Comp.yacc"
+#line 258 "Comp.yacc"
                 {(yyval.nodeval) = mknode("INT", mknode((yyvsp[0].strval), NULL, NULL), NULL);}
-#line 2392 "y.tab.c"
+#line 2391 "y.tab.c"
     break;
 
   case 128: /* value: FLOAT_VAL  */
-#line 260 "Comp.yacc"
+#line 259 "Comp.yacc"
                     {(yyval.nodeval) = mknode("FLOAT", mknode((yyvsp[0].strval), NULL, NULL), NULL);}
-#line 2398 "y.tab.c"
+#line 2397 "y.tab.c"
     break;
 
   case 129: /* value: DOUBLE_VAL  */
-#line 261 "Comp.yacc"
+#line 260 "Comp.yacc"
                      {(yyval.nodeval) = mknode("DOUBLE", mknode((yyvsp[0].strval), NULL, NULL), NULL);}
-#line 2404 "y.tab.c"
+#line 2403 "y.tab.c"
     break;
 
   case 130: /* value: SUB INT_VAL  */
-#line 262 "Comp.yacc"
+#line 261 "Comp.yacc"
                       {(yyval.nodeval) = mknode("INT", mknode(concat("-",(yyvsp[0].strval)), NULL, NULL), NULL);}
-#line 2410 "y.tab.c"
+#line 2409 "y.tab.c"
     break;
 
   case 131: /* value: SUB FLOAT_VAL  */
-#line 263 "Comp.yacc"
+#line 262 "Comp.yacc"
                         {(yyval.nodeval) = mknode("FLOAT", mknode(concat("-",(yyvsp[0].strval)), NULL, NULL), NULL);}
-#line 2416 "y.tab.c"
+#line 2415 "y.tab.c"
     break;
 
   case 132: /* value: SUB DOUBLE_VAL  */
-#line 264 "Comp.yacc"
+#line 263 "Comp.yacc"
                          {(yyval.nodeval) = mknode("DOUBLE", mknode(concat("-",(yyvsp[0].strval)), NULL, NULL), NULL);}
-#line 2422 "y.tab.c"
+#line 2421 "y.tab.c"
     break;
 
   case 133: /* value: ADD INT_VAL  */
-#line 265 "Comp.yacc"
+#line 264 "Comp.yacc"
                       {(yyval.nodeval) = mknode("INT", mknode(concat("+",(yyvsp[0].strval)), NULL, NULL), NULL);}
-#line 2428 "y.tab.c"
+#line 2427 "y.tab.c"
     break;
 
   case 134: /* value: ADD FLOAT_VAL  */
-#line 266 "Comp.yacc"
+#line 265 "Comp.yacc"
                         {(yyval.nodeval) = mknode("FLOAT", mknode(concat("+",(yyvsp[0].strval)), NULL, NULL), NULL);}
-#line 2434 "y.tab.c"
+#line 2433 "y.tab.c"
     break;
 
   case 135: /* value: ADD DOUBLE_VAL  */
-#line 267 "Comp.yacc"
+#line 266 "Comp.yacc"
                          {(yyval.nodeval) = mknode("DOUBLE", mknode(concat("+",(yyvsp[0].strval)), NULL, NULL), NULL);}
-#line 2440 "y.tab.c"
+#line 2439 "y.tab.c"
     break;
 
   case 136: /* value: ID  */
-#line 268 "Comp.yacc"
+#line 267 "Comp.yacc"
              {(yyval.nodeval) = mknode("ID", mknode((yyvsp[0].strval), NULL, NULL), NULL);}
-#line 2446 "y.tab.c"
+#line 2445 "y.tab.c"
     break;
 
   case 137: /* value: TRUE_VAL  */
-#line 269 "Comp.yacc"
+#line 268 "Comp.yacc"
                    {(yyval.nodeval) = mknode("BOOL", mknode((yyvsp[0].strval), NULL, NULL), NULL);}
-#line 2452 "y.tab.c"
+#line 2451 "y.tab.c"
     break;
 
   case 138: /* value: FALSE_VAL  */
-#line 270 "Comp.yacc"
+#line 269 "Comp.yacc"
                     {(yyval.nodeval) = mknode("BOOL", mknode((yyvsp[0].strval), NULL, NULL), NULL);}
-#line 2458 "y.tab.c"
+#line 2457 "y.tab.c"
     break;
 
   case 139: /* value: CHAR_VAL  */
-#line 271 "Comp.yacc"
+#line 270 "Comp.yacc"
                    {(yyval.nodeval) = mknode("CHAR", mknode((yyvsp[0].strval), NULL, NULL), NULL);}
-#line 2464 "y.tab.c"
+#line 2463 "y.tab.c"
     break;
 
   case 140: /* value: STRING_VAL  */
-#line 272 "Comp.yacc"
+#line 271 "Comp.yacc"
                      {(yyval.nodeval) = mknode("STRING", mknode((yyvsp[0].strval), NULL, NULL), NULL);}
-#line 2470 "y.tab.c"
+#line 2469 "y.tab.c"
     break;
 
   case 141: /* value: HEX_VAL  */
-#line 273 "Comp.yacc"
+#line 272 "Comp.yacc"
                   {(yyval.nodeval) = mknode("INT", mknode((yyvsp[0].strval), NULL, NULL), NULL);}
-#line 2476 "y.tab.c"
+#line 2475 "y.tab.c"
     break;
 
 
-#line 2480 "y.tab.c"
+#line 2479 "y.tab.c"
 
       default: break;
     }
@@ -2669,7 +2668,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 275 "Comp.yacc"
+#line 274 "Comp.yacc"
 
 #include "lex.yy.c"
 int main() {
