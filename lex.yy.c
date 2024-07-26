@@ -825,52 +825,52 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 YY_RULE_SETUP
 #line 6 "Comp.lex"
-{yylval.strval = strdup("bool"); return BOOL;}
+{yylval.strval = strdup("BOOL"); return BOOL;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
 #line 7 "Comp.lex"
-{yylval.strval = strdup("char"); return CHAR;}
+{yylval.strval = strdup("CHAR"); return CHAR;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 8 "Comp.lex"
-{yylval.strval = strdup("int"); return INT;}
+{yylval.strval = strdup("INT"); return INT;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
 #line 9 "Comp.lex"
-{yylval.strval = strdup("double"); return DOUBLE;}
+{yylval.strval = strdup("DOUBLE"); return DOUBLE;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
 #line 10 "Comp.lex"
-{yylval.strval = strdup("float"); return FLOAT;}
+{yylval.strval = strdup("FLOAT"); return FLOAT;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 11 "Comp.lex"
-{yylval.strval = strdup("string"); return STRING;}
+{yylval.strval = strdup("STRING"); return STRING;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
 #line 12 "Comp.lex"
-{yylval.strval = strdup("int*"); return INT_PTR;}
+{yylval.strval = strdup("INT*"); return INT_PTR;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
 #line 13 "Comp.lex"
-{yylval.strval = strdup("char*"); return CHAR_PTR;}
+{yylval.strval = strdup("CHAR*"); return CHAR_PTR;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
 #line 14 "Comp.lex"
-{yylval.strval = strdup("double*"); return DOUBLE_PTR;}
+{yylval.strval = strdup("DOUBLE*"); return DOUBLE_PTR;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
 #line 15 "Comp.lex"
-{yylval.strval = strdup("float*"); return FLOAT_PTR;}
+{yylval.strval = strdup("FLOAT*"); return FLOAT_PTR;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP

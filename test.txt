@@ -1,11 +1,11 @@
-private int foo(args>> string: moshe) {
 
-    var int: y<-3;
-    var float: x<-4;
-    
-    private void goo(args>> int: abc) {
-        var double: z<-1;
-        string w[32]<-"hello";
-    }
+public bool foo(args>> int: x,b) : static {
+    var int: lol <- x;
+    return false;
 }
 
+public void main() : static {
+    var bool: z;
+    z <- foo(1,4);
+    return ;
+}

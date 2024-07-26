@@ -260,3 +260,61 @@ return true;
 fee(2f,3.5f,0.4f);
 }
 
+
+
+
+
+
+
+
+
+private int foo(args>> string: moshe, yoni, lol) {
+
+    var int: y<-3;
+    var float: x<-4;
+
+    private void goo(args>> int: abc) {
+        var double: z<-1;
+        string w[32]<-"hello";
+    }
+
+    {
+        var int: aa<-3;
+        var float: bbb<-4;
+        var double: cccc<-3;
+    }
+
+    do {
+        var char: x <- '+';
+    }
+    while (x<3);
+    
+    while (x<3) {
+        string message[34] <- "have a nice day";
+    }
+}
+
+private void boo(args>> int: abc) {
+    var double: a<-3;
+    string b[12]<-12;
+}
+
+
+
+
+many_string : ID '[' INT_VAL ']' assignment ',' many_string 
+                {$$ = mknode("", mknode("ID", mknode($1, NULL, NULL), mknode(concat(concat("[",$3),"]"), NULL, NULL)), mknode("ASSIGN", $5, $7));}
+            | ID '[' INT_VAL ']' assignment 
+                {$$ = mknode("", mknode("ID", mknode($1, NULL, NULL), mknode(concat(concat("[",$3),"]"), NULL, NULL)), mknode("ASSIGN",$5,NULL));}
+            | ID '[' INT_VAL ']' ',' many_string
+                {$$ = mknode("", mknode("ID", mknode($1, NULL, NULL), mknode(concat(concat("[",$3),"]"), NULL, NULL)), $6);}
+            | ID '[' INT_VAL ']'
+                {$$ = mknode("", mknode($1, NULL, NULL), mknode(concat(concat("[",$3),"]"), NULL, NULL));};
+
+
+function_call : ID '(' function_params ')' {$$ = mknode(concat($1,"( params: ... )"), $3, NULL);}
+                | ID '(' ')' {$$ = mknode(concat($1,"()"), NULL, NULL);}
+
+
+function_params : expression ',' function_params {$$ = mknode("", $1, $3);}
+                | expression {$$ = $1;}
