@@ -6,6 +6,12 @@ public bool foo(args>> int: x,b) : static {
 
 public void main() : static {
     var bool: z;
-    z <- foo(1,4);
+
+    public bool goo() : static {
+        var bool: lol <- foo(1,2);
+        return false;
+    }
+
+    z <- goo();
     return ;
 }
