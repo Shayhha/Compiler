@@ -33,7 +33,7 @@
 %type<nodeval> declaration declarations statement statements assignment code functions function_call update function_params for_init_many for_init expression value for_statement return_statement function_block function_static func_many_id func_args_decleration function_args function_return_type function_type function if_statement else_statement block block_contents program while_statement do_while_statement var_declaration many_id param_type string_declaration many_string 
 %%
 
-program : code {$$ = $1; printtree($$, 0); checktree($$);};
+program : code {$$ = $1; checktree($$); printtree($$, 0);};
 
 code : functions {$$ = mknode("CODE", $1, NULL);}
 
@@ -78,10 +78,10 @@ function_params : expression ',' function_params {$$ = mknode("EXPRESSION", $1, 
 
 
 
-do_while_statement : DO block WHILE '(' expression ')' ';' {$$ = mknode("DO WHILE", $2, $5);};
+do_while_statement : DO block WHILE '(' expression ')' ';' {$$ = mknode("DO WHILE", $2, mknode("EXPRESSION", $5, NULL));};
 
-while_statement : WHILE '(' expression ')' statement {$$ = mknode($1, $3, $5);}
-                | WHILE '(' expression ')' block {$$ = mknode($1, $3, $5);};
+while_statement : WHILE '(' expression ')' statement {$$ = mknode($1, mknode("EXPRESSION", $3, NULL), $5);}
+                | WHILE '(' expression ')' block {$$ = mknode($1, mknode("EXPRESSION", $3, NULL), $5);};
 
 for_statement : FOR '(' for_init ';' expression ';' update ')' block 
                         {$$ = mknode($1, mknode("ASSIGN", $3, mknode("EXPRESSION", $5, mknode("UPDATE", $7, NULL))), mknode("FOR BLOCK", $9, NULL));}
@@ -102,26 +102,26 @@ for_statement : FOR '(' for_init ';' expression ';' update ')' block
 
 
 
-for_init : VAR param_type ':' for_init_many {$$ = mknode("", $2, $4);}
-            | MULT ID ASSIGN expression {$$ = mknode("", mknode($2, $4, NULL), NULL);}
+for_init : VAR param_type ':' for_init_many {$$ = mknode("VAR", $2, $4);}
+            | MULT ID ASSIGN expression {$$ = mknode("", mknode($2, mknode("EXPRESSION", $4, NULL), NULL), NULL);}
             | for_init_many {$$ = $1;};
 
 for_init_many : ID assignment ',' for_init_many {$$ = mknode($1, $2, $4);}
-          | ID ',' for_init_many {$$ = mknode($1, $3, NULL);}
+          | ID ',' for_init_many {$$ = mknode($1, NULL, $3);}
           | ID assignment {$$ = mknode($1, $2, NULL);}
           | ID {$$ = mknode($1, NULL, NULL);};
 
-update : expression ',' update {$$ = mknode("", $1, $3);}
-        | expression {$$ = $1;}
-        | ID assignment ',' update {$$ = mknode(concat("ASSIGN  ",$1), $2, $4);}
-        | ID assignment {$$ = mknode(concat("ASSIGN  ",$1), $2, NULL);}
+update : expression ',' update {$$ = mknode("", mknode("EXPRESSION", $1, NULL), mknode("UPDATE", $3, NULL));}
+        | expression {$$ = mknode("EXPRESSION", $1, NULL);}
+        | ID assignment ',' update {$$ = mknode("", mknode("ID ASSIGN", mknode($1, NULL, NULL), $2), mknode("UPDATE", $4, NULL));}
+        | ID assignment {$$ = mknode("ID ASSIGN", mknode($1, NULL, NULL), $2);}
         
 
 
-if_statement : IF '(' expression ')' statement %prec non_else {$$ = mknode($1, mknode("CONDITION",$3, NULL), $5);}
-                | IF '(' expression ')' statement else_statement {$$ = mknode("", mknode($1, mknode("CONDITION",$3, NULL), $5), mknode("ELSE", $6, NULL));};
-                | IF '(' expression ')' block %prec non_else {$$ = mknode($1, mknode("CONDITION",$3, NULL), $5);}
-                | IF '(' expression ')' block else_statement {$$ = mknode("", mknode($1, mknode("CONDITION",$3, NULL), $5), mknode("ELSE", $6, NULL));};
+if_statement : IF '(' expression ')' statement %prec non_else {$$ = mknode($1, mknode("CONDITION", mknode("EXPRESSION", $3, NULL), NULL), $5);}
+                | IF '(' expression ')' statement else_statement {$$ = mknode("", mknode($1, mknode("CONDITION",mknode("EXPRESSION", $3, NULL), NULL), $5), mknode("ELSE", $6, NULL));};
+                | IF '(' expression ')' block %prec non_else {$$ = mknode($1, mknode("CONDITION",mknode("EXPRESSION", $3, NULL), NULL), $5);}
+                | IF '(' expression ')' block else_statement {$$ = mknode("", mknode($1, mknode("CONDITION",mknode("EXPRESSION", $3, NULL), NULL), $5), mknode("ELSE", $6, NULL));};
 
 else_statement : ELSE statement {$$ = mknode("", $2, NULL);}
                 | ELSE block {$$ = mknode("", $2, NULL);}
@@ -143,18 +143,18 @@ block_contents : declarations functions statements {$$ = mknode("", mknode("", $
 
 
 
-statement : if_statement {$$ = $1;} 
-        | for_statement {$$ = $1;} 
-        | while_statement {$$ = $1;} 
-        | do_while_statement {$$ = $1;} 
+statement : if_statement {$$ = mknode("",$1,NULL);} 
+        | for_statement {$$ = mknode("",$1,NULL);} 
+        | while_statement {$$ = mknode("",$1,NULL);} 
+        | do_while_statement {$$ = mknode("",$1,NULL);} 
         | COMMENT {$$ = mknode($1, NULL, NULL);} 
-        | expression ';' {$$ = $1;}
-        | return_statement {$$ = $1;}
-        | '{' '}' {$$ = NULL;};
+        | expression ';' {$$ = mknode("EXPRESSION", $1, NULL);}
+        | return_statement {$$ = mknode("",$1,NULL);}
+        | '{' '}' {$$ = mknode("",NULL,NULL);};
         | ID assignment ';' {$$ = mknode("ID ASSIGN", mknode($1, NULL, NULL), $2);}            
         | MULT ID assignment ';' {$$ = mknode("ASSIGN", mknode($2, NULL, NULL), $3);}; 
-        | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), $3), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));} 
-        | ID '[' expression ']' ASSIGN ID ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), $3), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));}                          
+        | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));} 
+        | ID '[' expression ']' ASSIGN ID ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));}                          
 
 statements : statement statements {$$ = mknode("", $1, $2);}
         | statement {$$ = $1;}
@@ -216,7 +216,7 @@ many_id : ID assignment ',' many_id {$$ = mknode($1, $2, $4);}
           | ID {$$ = mknode($1, NULL, NULL);};
 
 assignment : ASSIGN expression {$$ = mknode("ASSIGN",mknode("EXPRESSION", $2, NULL),NULL);}
-        | ASSIGN ADDRESS ID '[' expression ']' {$$ = mknode(concat("&",$3), $5, NULL);}
+        | ASSIGN ADDRESS ID '[' expression ']' {$$ = mknode(concat("&",$3), mknode("EXPRESSION", $5, NULL), NULL);}
 
 
 
@@ -234,7 +234,7 @@ param_type : INT {$$ = mknode($1,NULL,NULL);}
 expression : NULL_VALUE {$$ = mknode($1, NULL, NULL);}
             | ADDRESS ID {$$ = mknode("&", mknode($2,NULL,NULL), NULL);} 
             | MULT ID {$$ = mknode("*", mknode($2,NULL,NULL), NULL);}
-            | NOT expression {$$ = mknode("! (not)", $2, NULL);}
+            | NOT expression {$$ = mknode("! (not)", mknode("EXPRESSION", $2, NULL), NULL);}
             | expression LESSER expression {$$ = mknode("<", mknode("EXPRESSION", $1, NULL), mknode("EXPRESSION", $3, NULL));}
             | expression LESSER_EQ expression {$$ = mknode("<=", mknode("EXPRESSION", $1, NULL), mknode("EXPRESSION", $3, NULL));}
             | expression GREATER expression {$$ = mknode(">", mknode("EXPRESSION", $1, NULL), mknode("EXPRESSION", $3, NULL));}

@@ -53,6 +53,7 @@ void addLinkedListNode(Scope* scope, LinkedListNode* listNode);
 void findAndInitVars(Scope* scope, node* Node, char* type);
 Variable* findVarNodeInScope(Scope* scope, LinkedListNode* node);
 Variable* findVarNodeInCurrentScope(Scope* scope, char* name);
+char* findVarInFuncArgs(Scope* scope, char* arg);
 
 void findAndInitFuncArgs(LinkedListNode* item, node* temp);
 Function* findFuncNodeInScope(Scope* scope, LinkedListNode* node);
@@ -164,23 +165,28 @@ void findAndInitFuncArgs(LinkedListNode* item, node* temp) {
     if (strcmp(temp->left->token, "") != 0) { // if we only have one type of arguments: foo(args>> int: x, y)      
         tempType = temp->left->token;
         variables = temp->right;
-        
-        while (variables->left != NULL) {
+        do {
+            //!! check for redeclaration, need to add: " Scope* scope " to signiture
+            // char* currentArg = variables->token;
+            // if (findVarInFuncArgs(scope, currentArg) != NULL) {
+            //     printf("ERROR: redeclaration of identifier '%s', it has already been declared as a function argument in this scope.\n", currentArg);
+            //     free(item);
+            //     free(temp);
+            //     free(variables);
+            //     free(scope);
+            //     exit(1);
+            // }
             addArg(item->function, makeFuncArg(variables->token, tempType));
             variables = variables->left;
-        }
-        addArg(item->function, makeFuncArg(variables->token, tempType));
+        } while (variables != NULL);  
     }
     else { // in the case we have multiple types of arguments: foo(args>> int: x, y ; float: a,b,c)
         tempType = temp->left->left->token;
         variables = temp->left->right;
-
-        while (variables->left != NULL) {
+        do {
             addArg(item->function, makeFuncArg(variables->token, tempType));
             variables = variables->left;
-        }
-        addArg(item->function, makeFuncArg(variables->token, tempType));
-
+        } while (variables != NULL);
         findAndInitFuncArgs(item, temp->right);
     }
 }
@@ -191,8 +197,8 @@ void findAndInitVars(Scope* scope, node* Node, char* type) {
     Function* currentFunc = getCurrentFunction(scope);
     if (currentFunc != NULL) {
         for (size_t i = 0; i < currentFunc->countArgs; i++) {
-            if (strcmp(currentFunc->args[i]->name, Node->left->left->left->token) == 0) {
-                printf("ERROR: redeclaration of identifier '%s', it has already been declared in current function arguments.\n", Node->left->left->left->token);
+            if (strcmp(currentFunc->args[i]->name, Node->token) == 0) {
+                printf("ERROR: redeclaration of identifier '%s', it has already been declared in current function arguments.\n", Node->token);
                 free(Node);
                 free(currentFunc);
                 free(scope);
@@ -242,11 +248,43 @@ void findAndInitStrings(Scope* scope, node* Node, char* type) {
         exit(1); 
     }
 
+    // check that string size is not zero
+    if (atoi(Node->left->left->right->token) == 0) {
+        printf("ERROR: string size of identifier '%s' can't be 0.\n", Node->left->left->left->token);
+        free(Node);
+        free(scope);
+        exit(1); 
+    }
+
     // check if there is assignment, if == NULL then no assignment
     if (Node->left->right->left == NULL) 
         addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, NULL, type, Node->left->left->right->token));
     else {
-        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, Node->left->right->left->left->token, type, Node->left->left->right->token));
+        // checking that the assignment value is of type STRING
+        node* val = Node->left->right->left->left;
+        if (strcmp("NULL", semanticChecks(scope, val)) != 0) {
+
+            if (strcmp("STRING", semanticChecks(scope, val)) != 0) {
+                printf("ERROR: type mismatch for identifier '%s'.\n", Node->left->left->left->token);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+
+            // check that assignment value len is no longer than the declared max len
+            char* stringMaxLen = Node->left->left->right->token;
+            if (strcmp("NULL", val->left->token) != 0) {
+                // -2 is because we want to disregard the "" symbols.
+                if ((strlen(val->left->left->left->token) - 2) >= atoi(stringMaxLen)) { //? >= because we leave space for '\0'
+                    printf("ERROR: assignment string length of identifier '%s' exceeded the max length that was declared.\n", Node->left->left->left->token);
+                    free(Node);
+                    free(scope);
+                    exit(1);
+                }
+            }
+        }
+    
+        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, val->token, type, Node->left->left->right->token));
     }
 
     // check if there are more declarations in this declaration
@@ -327,18 +365,40 @@ Variable* findVarNodeInCurrentScope(Scope* scope, char* name) {
 }
 
 /* function for getting the current function, the one we are currently in the scope of */
-Function* getCurrentFunction(Scope* scope) { //! need to make it recursive, find the first item at the end of the linked list that is a Function and return it
+Function* getCurrentFunction(Scope* scope) { 
     if (scope != NULL) {
         LinkedListNode* current = scope->father->list; 
         // go through all elements in linked list node
         while (current->next != NULL) { 
             current = current->next; 
         }
-        
+
         if (current->function == NULL) {
-            return NULL;
+            return getCurrentFunction(scope->father);
         }
         return current->function; 
+    }
+    return NULL; 
+}
+
+/* function for finding a variable in function arguments */
+char* findVarInFuncArgs(Scope* scope, char* arg) { 
+    if (scope != NULL) {
+        LinkedListNode* current = scope->list; 
+        // go through all elements in linked list node
+        while (current->next != NULL) { 
+            current = current->next; 
+        }
+
+        // look for arg in the function arguments
+        if (current->function != NULL) {
+            for (size_t i = 0; i < current->function->countArgs; i++) {
+                if (strcmp(current->function->args[i]->name, arg) == 0) {
+                    return current->function->args[i]->type;
+                }
+            }
+        }
+        return findVarInFuncArgs(scope->father, arg); // if not found call recursivly 
     }
     return NULL; 
 }
@@ -561,7 +621,18 @@ char* semanticChecks(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "IF") == 0) { 
-        // todo: check condition with Node->left->left
+        // check that condition is of type bool
+        char* conditionType = semanticChecks(scope, Node->left->left);
+        if (strcmp("BOOL", conditionType) != 0) {
+            printf("ERROR: if statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+            free(Node);
+            free(scope);
+            exit(1);
+        }
+
+        LinkedListNode* item = makeVarNode("if", NULL, NULL, NULL);
+        addLinkedListNode(scope, item);
+
         if (strcmp(Node->right->token, "BLOCK") == 0)
             semanticChecks(scope, Node->right); // if - single line statement
         else
@@ -569,16 +640,45 @@ char* semanticChecks(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "ELSE") == 0) {
-        semanticChecks(makeScope(scope), Node->left); 
+        // adding else block into scope
+        LinkedListNode* item = makeVarNode("else", NULL, NULL, NULL);
+        addLinkedListNode(scope, item);
+
+        if (strcmp(Node->left->left->token, "BLOCK") == 0)
+            semanticChecks(scope, Node->left); // if - single line statement
+        else
+            semanticChecks(makeScope(scope), Node->left); // if - multi line block 
     }
 
     else if (strcmp(Node->token, "DO WHILE") == 0) {
-        // todo: check condition with Node->right
-        semanticChecks(makeScope(scope), Node->left); 
+        // adding do while block into scope
+        LinkedListNode* item = makeVarNode("do", NULL, NULL, NULL);
+        addLinkedListNode(scope, item);
+
+        // check that condition is of type bool
+        char* conditionType = semanticChecks(scope, Node->right);
+        if (strcmp("BOOL", conditionType) != 0) {
+            printf("ERROR: do-while loop statement condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
+            free(Node);
+            free(scope);
+            exit(1);
+        }
+        semanticChecks(scope, Node->left); 
     }
 
     else if (strcmp(Node->token, "WHILE") == 0) {
-        // todo: check condition with Node->left
+        // adding while block into scope
+        LinkedListNode* item = makeVarNode("while", NULL, NULL, NULL);
+        addLinkedListNode(scope, item);
+
+        char* conditionType = semanticChecks(scope, Node->left);
+        if (strcmp("BOOL", conditionType) != 0) {
+            printf("ERROR: while loop statement condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
+            free(Node);
+            free(scope);
+            exit(1);
+        }
+
         if (strcmp(Node->right->token, "BLOCK") == 0)
             semanticChecks(scope, Node->right); // while - single line statement
         else
@@ -586,16 +686,68 @@ char* semanticChecks(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "FOR") == 0) {
-        semanticChecks(scope, Node->left); // checking assignment, expression and update
-        if (strcmp(Node->right->left->token, "BLOCK") == 0)
-            semanticChecks(scope, Node->right->left); // for - single line statement
-        else
-            semanticChecks(makeScope(scope), Node->right->left); // for - multi line statement
+        // adding for block into scope
+        LinkedListNode* item = makeVarNode("for", NULL, NULL, NULL);
+        addLinkedListNode(scope, item);
+
+        // creating a scope for the for loop manualy
+        Scope* forLoopScope = makeScope(scope);
+
+        // checking if for loop has a variable declaration statement
+        if (strcmp("ASSIGN", Node->left->token) == 0) {
+            // check the assign statement
+            if (strcmp(Node->left->left->token, "VAR") == 0)
+                semanticChecks(forLoopScope, Node->left->left);
+
+            // check condition type
+            char* conditionType = semanticChecks(forLoopScope, Node->left->right);
+            if (strcmp("BOOL", conditionType) != 0) {
+                printf("ERROR: for loop condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
+                free(Node);
+                free(forLoopScope);
+                free(scope);
+                exit(1);
+            }
+
+            // check if there is an update statement
+            if (Node->left->right->right != NULL) {
+                semanticChecks(forLoopScope, Node->left->right->right);
+            }
+        }
+        else { // if there is no var declaration statement then the expression and update pointers are different
+            // check condition type
+            char* conditionType = semanticChecks(forLoopScope, Node->left);
+            if (strcmp("BOOL", conditionType) != 0) {
+                printf("ERROR: for loop condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
+                free(Node);
+                free(forLoopScope);
+                free(scope);
+                exit(1);
+            }
+
+            // check if there is an update statement
+            if (Node->left->right != NULL) {
+                semanticChecks(forLoopScope, Node->left->right);
+            }
+        }
+
+        // check the semantics of the for loop block
+        semanticChecks(forLoopScope, Node->right->left->left);
     }
 
+
     else if (strcmp(Node->token, "UPDATE") == 0) {
-        
+        // if there is only one update statement without ','
+        if (strcmp(Node->left->token, "EXPRESSION") == 0 
+            || strcmp(Node->left->token, "ID ASSIGN") == 0) {
+            semanticChecks(scope, Node->left);
+        }
+        else { // if there are multiple update statements seperated by ','
+            semanticChecks(scope, Node->left->left); // check the current update statement
+            semanticChecks(scope, Node->left->right); // recursive call to the next update statement
+        }
     }
+
 
 
     //? * * * * * * Expressions and Other * * * * * * *//
@@ -645,19 +797,20 @@ char* semanticChecks(Scope* scope, node* Node) {
     else if (strcmp(Node->token, "EXPRESSION") == 0) {
         // expressions have many options...
 
-        if (strcmp(Node->left->left->token, "FUNCTION CALL") == 0) {
+        if (strcmp(Node->left->token, "NULL") == 0) {
+            return "NULL";
+        }
+        else if (strcmp(Node->left->left->token, "FUNCTION CALL") == 0) {
             char* type = semanticChecks(scope, Node->left->left);
             return type; 
         }
         else if (strcmp(Node->left->left->token, "ID") == 0) {
-            Function* currentFunc = getCurrentFunction(scope);
-            if (currentFunc != NULL) {
-                for (size_t i = 0; i < currentFunc->countArgs; i++) {
-                    if (strcmp(currentFunc->args[i]->name, Node->left->left->left->token) == 0) {
-                        return currentFunc->args[i]->type;
-                    }
-                }
+            // try to find var in a function argument
+            char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->left->left->token);
+            if (typeIfFound != NULL) {
+                return typeIfFound;
             }
+            // otherwise try to find it in a scope
             LinkedListNode* varNode = makeVarNode(Node->left->left->left->token, NULL, NULL, NULL);
             Variable* var = findVarNodeInScope(scope, varNode);
             if (var == NULL) {
@@ -686,6 +839,16 @@ char* semanticChecks(Scope* scope, node* Node) {
                 || strcmp(Node->left->token, ">=") == 0
                 || strcmp(Node->left->token, "==") == 0
                 || strcmp(Node->left->token, "!=") == 0) {
+
+            // check explicit division by zero
+            //! check if we need to check for division by zero
+            if (strcmp(Node->left->token, "/") == 0) {
+                if (strcmp(Node->left->right->left->left->left->token, "0") == 0) {
+                    printf("ERROR: division by zero detected.\n");
+                    free(scope);
+                    exit(1);
+                }
+            }
 
             char* leftType = semanticChecks(scope, Node->left->left);
             char* rightType = semanticChecks(scope, Node->left->right);
@@ -839,8 +1002,3 @@ void printScope(Scope* stack) {
         current = current->father;
     }
 }
-
-
-
-// todo:
-// reserved identifier misuse

@@ -1,17 +1,22 @@
 
-public bool foo(args>> int: x,b) : static {
-    var int: lol <- x;
-    return false;
+public int foo(args>> int: x,b) : static {
+    var int: y <- x;
+    string mess1[1] <- null;
+    string mess2[20] <- "123";
+
+    public bool goo(args>> int: z) : static {
+        var int: lol <- foo(1,2);
+        return false;
+    }
+
+    for (var int: i<-0 ; i<5 ; i<-5, i<-foo(5,5)) 
+        if (true)
+            return 5;
+
+    return 0;
 }
 
 public void main() : static {
     var bool: z;
-
-    public bool goo() : static {
-        var bool: lol <- foo(1,2);
-        return false;
-    }
-
-    z <- goo();
     return ;
 }
