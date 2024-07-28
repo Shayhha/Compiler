@@ -2038,7 +2038,7 @@ yyreduce:
 
   case 73: /* statement: MULT ID assignment ';'  */
 #line 155 "Comp.yacc"
-                                 {(yyval.nodeval) = mknode("ASSIGN", mknode((yyvsp[-2].strval), NULL, NULL), (yyvsp[-1].nodeval));}
+                                 {(yyval.nodeval) = mknode("* ID ASSIGN", mknode((yyvsp[-2].strval), NULL, NULL), (yyvsp[-1].nodeval));}
 #line 2043 "y.tab.c"
     break;
 

@@ -827,6 +827,26 @@ char* semanticChecks(Scope* scope, node* Node) {
         else if (strcmp(Node->left->token, "( )") == 0) {
             return semanticChecks(scope, Node->left->left); //* this is the type of the value from yacc
         }
+        else if (strcmp(Node->left->token, "| |") == 0) {
+            char* type = semanticChecks(scope, Node->left->left);
+            char* resType = checkArithmetics("||", type, NULL);
+            if (resType == NULL) {
+                printf("ERROR: type mismatch on '%s' operator, expected expression of type 'STRING', but found '%s'.\n", Node->left->token, type);
+                free(scope);
+                exit(1);
+            }
+            return resType;
+        }
+        else if (strcmp(Node->left->token, "! (not)") == 0) {
+            char* type = semanticChecks(scope, Node->left->left);
+            char* resType = checkArithmetics("!", type, NULL);
+            if (resType == NULL) {
+                printf("ERROR: type mismatch on '%s' operator, expected expression of type 'BOOL', but found '%s'.\n", Node->left->token, type);
+                free(scope);
+                exit(1);
+            }
+            return resType;
+        }
         else if (strcmp(Node->left->token, "+") == 0
                 || strcmp(Node->left->token, "-") == 0
                 || strcmp(Node->left->token, "*") == 0

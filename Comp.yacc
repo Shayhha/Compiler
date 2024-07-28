@@ -152,7 +152,7 @@ statement : if_statement {$$ = mknode("",$1,NULL);}
         | return_statement {$$ = mknode("",$1,NULL);}
         | '{' '}' {$$ = mknode("",NULL,NULL);};
         | ID assignment ';' {$$ = mknode("ID ASSIGN", mknode($1, NULL, NULL), $2);}            
-        | MULT ID assignment ';' {$$ = mknode("ASSIGN", mknode($2, NULL, NULL), $3);}; 
+        | MULT ID assignment ';' {$$ = mknode("* ID ASSIGN", mknode($2, NULL, NULL), $3);}; 
         | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));} 
         | ID '[' expression ']' ASSIGN ID ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));}                          
 

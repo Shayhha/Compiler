@@ -4,10 +4,14 @@ public int foo(args>> int: x,b) : static {
     string mess1[1] <- null;
     string mess2[20] <- "123";
 
+
     public bool goo(args>> int: z) : static {
         var int: lol <- foo(1,2);
         return false;
     }
+
+    y <- |"asd"|;
+    !(3<4);
 
     for (var int: i<-0 ; i<5 ; i<-5, i<-foo(5,5)) 
         if (true)
