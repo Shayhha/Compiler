@@ -153,8 +153,10 @@ statement : if_statement {$$ = mknode("",$1,NULL);}
         | '{' '}' {$$ = mknode("",NULL,NULL);};
         | ID assignment ';' {$$ = mknode("ID ASSIGN", mknode($1, NULL, NULL), $2);}            
         | MULT ID assignment ';' {$$ = mknode("* ID ASSIGN", mknode($2, NULL, NULL), $3);}; 
-        | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));} 
-        | ID '[' expression ']' ASSIGN ID ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("ASSIGN", mknode($6, NULL, NULL), NULL));}                          
+        | ID '[' expression ']' assignment ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("", $5, NULL));}
+        /* | ID '[' expression ']' ASSIGN CHAR_VAL ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("ASSIGN", mknode("ID", mknode($6, NULL, NULL), NULL), NULL));} 
+        | ID '[' expression ']' ASSIGN ID ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("ASSIGN", mknode("ID", mknode($6, NULL, NULL), NULL), NULL));}                          
+        | ID '[' expression ']' ASSIGN NULL_VALUE ';' {$$ = mknode("ASSIGN[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), mknode("ASSIGN", mknode("ID", mknode($6, NULL, NULL), NULL), NULL));}                           */
 
 statements : statement statements {$$ = mknode("", $1, $2);}
         | statement {$$ = $1;}
@@ -173,36 +175,36 @@ declaration : var_declaration {$$ = $1;}
 
 string_declaration  : STRING many_string ';' {$$ = mknode("STRING", $2, NULL);}        
                         
-many_string : ID '[' INT_VAL ']' assignment ',' many_string 
+many_string : ID '[' expression ']' assignment ',' many_string 
                 {$$ = mknode("", 
                                 mknode("", 
-                                        mknode(concat($1, concat(concat(" [",$3),"]")), 
+                                        mknode("", 
                                                 mknode($1, NULL, NULL), 
-                                                mknode($3, NULL, NULL)),
+                                                mknode("EXPRESSION", $3, NULL)),
                                         mknode("", $5, NULL)), 
                                 mknode("", $7, NULL));}
-            | ID '[' INT_VAL ']' assignment 
+            | ID '[' expression ']' assignment 
                 {$$ = mknode("", 
                                 mknode("", 
-                                        mknode(concat($1, concat(concat(" [",$3),"]")), 
+                                        mknode("", 
                                                 mknode($1, NULL, NULL), 
-                                                mknode($3, NULL, NULL)),
+                                                mknode("EXPRESSION", $3, NULL)),
                                         mknode("", $5, NULL)), 
                                 mknode("", NULL, NULL));}
-            | ID '[' INT_VAL ']' ',' many_string
+            | ID '[' expression ']' ',' many_string
                 {$$ = mknode("", 
                                 mknode("", 
-                                        mknode(concat($1, concat(concat(" [",$3),"]")), 
+                                        mknode("", 
                                                 mknode($1, NULL, NULL), 
-                                                mknode($3, NULL, NULL)),
+                                                mknode("EXPRESSION", $3, NULL)),
                                         mknode("", NULL, NULL)), 
                                 mknode("", $6, NULL));}
-            | ID '[' INT_VAL ']'
+            | ID '[' expression ']'
                 {$$ = mknode("", 
                                 mknode("", 
-                                        mknode(concat($1, concat(concat(" [",$3),"]")), 
+                                        mknode("", 
                                                 mknode($1, NULL, NULL), 
-                                                mknode($3, NULL, NULL)),
+                                                mknode("EXPRESSION", $3, NULL)),
                                         mknode("", NULL, NULL)), 
                                 mknode("", NULL, NULL));}
              
@@ -233,7 +235,7 @@ param_type : INT {$$ = mknode($1,NULL,NULL);}
 
 expression : NULL_VALUE {$$ = mknode($1, NULL, NULL);}
             | ADDRESS ID {$$ = mknode("&", mknode("EXPRESSION", mknode("VALUE", mknode("ID", mknode($2, NULL, NULL), NULL), NULL), NULL), NULL);} 
-            | MULT ID {$$ = mknode("*", mknode($2,NULL,NULL), NULL);}
+            | MULT ID {$$ = mknode("* (pointer)", mknode("EXPRESSION", mknode("VALUE", mknode("ID", mknode($2, NULL, NULL), NULL), NULL), NULL), NULL);}
             | NOT expression {$$ = mknode("! (not)", mknode("EXPRESSION", $2, NULL), NULL);}
             | expression LESSER expression {$$ = mknode("<", mknode("EXPRESSION", $1, NULL), mknode("EXPRESSION", $3, NULL));}
             | expression LESSER_EQ expression {$$ = mknode("<=", mknode("EXPRESSION", $1, NULL), mknode("EXPRESSION", $3, NULL));}

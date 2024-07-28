@@ -63,7 +63,7 @@ int findMainFunction(Scope* scope);
 
 int checkVar(char* type, char* value);
 char* checkArithmetics(char* operator, char* type1, char* type2);
-char* semanticChecks(Scope* scope, node* Node);
+char* checkSemantics(Scope* scope, node* Node);
 void checktree(node* Node);
 
 void printLinkedList(LinkedListNode* list);
@@ -221,7 +221,7 @@ void findAndInitVars(Scope* scope, node* Node, char* type) {
     }
     else {
         if (strcmp(Node->left->token, "ASSIGN") == 0) { 
-            char* foundType = semanticChecks(scope, Node->left->left);
+            char* foundType = checkSemantics(scope, Node->left->left);
             //check if given type is of type pointer and if so we need to check its value type
             if ((strcmp(type, "INT*") == 0) || (strcmp(type, "DOUBLE*") == 0) || (strcmp(type, "FLOAT*") == 0) || (strcmp(type, "CHAR*") == 0)) {
                 char* expectedType = checkArithmetics("*", type, NULL);
@@ -261,44 +261,65 @@ void findAndInitStrings(Scope* scope, node* Node, char* type) {
         exit(1); 
     }
 
-    // check that string size is not zero
-    if (atoi(Node->left->left->right->token) == 0) {
-        printf("ERROR: string size of identifier '%s' can't be 0.\n", Node->left->left->left->token);
+    // check if the string size is of type int
+    char* stringSizeType = checkSemantics(scope, Node->left->left->right);
+    if (strcmp(stringSizeType, "INT") != 0) {
+        printf("ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", Node->left->left->left->token, stringSizeType);
         free(Node);
         free(scope);
         exit(1); 
     }
 
-    // check if there is assignment, if == NULL then no assignment
-    if (Node->left->right->left == NULL) 
-        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, NULL, type, Node->left->left->right->token));
-    else {
-        // checking that the assignment value is of type STRING
-        node* val = Node->left->right->left->left;
-        if (strcmp("NULL", semanticChecks(scope, val)) != 0) {
+    // check that string size is not explicit zero
+    if ((Node->left->left->right->left->token != NULL) && (strcmp(Node->left->left->right->left->token, "VALUE") == 0) && (Node->left->left->right->left->right == NULL) && (Node->left->left->right->left->left->left != NULL) && (atoi(Node->left->left->right->left->left->left->token)) == 0) {
+        printf("ERROR: string size of identifier '%s' can't be 0.\n", Node->left->left->left->token);
+        free(Node);
+        free(scope);
+        exit(1); 
+    }
+    
+    // checking that the assignment value is of type STRING or NULL           
+    if (Node->left->right->left != NULL) { 
+        char* assignemtType = checkSemantics(scope, Node->left->right->left->left);
+        if ((strcmp("NULL",assignemtType) != 0) && (strcmp("STRING", assignemtType) != 0)) {
+            printf("ERROR: type mismatch for identifier '%s', expected 'STRING' or 'NULL' but found '%s'.\n", Node->left->left->left->token, assignemtType);
+            free(Node);
+            free(scope);
+            exit(1);
+        }
+    }
 
-            if (strcmp("STRING", semanticChecks(scope, val)) != 0) {
-                printf("ERROR: type mismatch for identifier '%s'.\n", Node->left->left->left->token);
-                free(Node);
-                free(scope);
-                exit(1);
-            }
+    // check that string size is not an expression but a simple value to check if that index is valid
+    if ((strcmp(Node->left->left->right->left->token, "VALUE") == 0) && (strcmp(Node->left->left->right->left->left->token, "INT") == 0)) {
+        // check that index expression is less than or equal to the declared length and that its not negative
+        int indexValue = atoi(Node->left->left->right->left->left->left->token);
+        if (indexValue < 0) {
+            printf("ERROR: string size is invalid for identifier '%s', size must be greater than zero.\n", Node->left->left->left->token);
+            free(Node);
+            free(scope);
+            exit(1); 
+        }
 
-            // check that assignment value len is no longer than the declared max len
-            char* stringMaxLen = Node->left->left->right->token;
+        char* stringMaxLen = Node->left->left->right->left->left->left->token;
+        if (Node->left->right->left) {
+            node* val = Node->left->right->left->left;
             if (strcmp("NULL", val->left->token) != 0) {
-                // -2 is because we want to disregard the "" symbols.
-                if ((strlen(val->left->left->left->token) - 2) >= atoi(stringMaxLen)) { //? >= because we leave space for '\0'
-                    printf("ERROR: assignment string length of identifier '%s' exceeded the max length that was declared.\n", Node->left->left->left->token);
-                    free(Node);
-                    free(scope);
-                    exit(1);
+                if (strcmp("NULL", checkSemantics(scope, val)) != 0) { 
+                    int maxLen = atoi(stringMaxLen), assignemntStringLen = (strlen(val->left->left->left->token) - 2); // -2 is because we want to disregard the "" symbols.
+                    if (assignemntStringLen > maxLen) { //? >= because we leave space for '\0'
+                        printf("ERROR: assignment string is too long for identifier '%s', expected length <= '%d' but found string of length '%d'.\n", Node->left->left->left->token, maxLen, assignemntStringLen);
+                        free(Node);
+                        free(scope);
+                        exit(1);
+                    }
                 }
             }
         }
-    
-        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, val->token, type, Node->left->left->right->token));
+
+        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, NULL, type, stringMaxLen));
     }
+    addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, NULL, type, NULL));
+    
 
     // check if there are more declarations in this declaration
     if (Node->right->left != NULL) {
@@ -529,7 +550,7 @@ void checktree(node* Node) {
     Scope* programScope = (Scope*)malloc(sizeof(Scope));
 
     // checking the semantics of the program
-    semanticChecks(programScope, Node);
+    checkSemantics(programScope, Node);
 
     // checking if a main function was declared in the program
     if (findMainFunction(programScope) == 0) {
@@ -545,7 +566,7 @@ void checktree(node* Node) {
 
 /* main part 2 function that traverses the AST, creates scopes, creates symbol tables for variables and functions,
     checks all of the semantics of the code and prints error messages if an issue was found */
-char* semanticChecks(Scope* scope, node* Node) {
+char* checkSemantics(Scope* scope, node* Node) {
 
     if (Node == NULL) { 
         return NULL; // stopping the recursion
@@ -555,9 +576,9 @@ char* semanticChecks(Scope* scope, node* Node) {
 
     else if (strcmp(Node->token, "") == 0 || strcmp(Node->token, "CODE") == 0) {
         if (Node->left != NULL)
-            semanticChecks(scope, Node->left);
+            checkSemantics(scope, Node->left);
         if (Node->right != NULL)
-            semanticChecks(scope, Node->right);
+            checkSemantics(scope, Node->right);
     }
 
     else if (strcmp(Node->token, "FUNCTION") == 0) {
@@ -625,17 +646,17 @@ char* semanticChecks(Scope* scope, node* Node) {
         addLinkedListNode(scope, item);
         node* temp = Node->right->right->left;
         if (temp != NULL) {
-            semanticChecks(makeScope(scope), temp);
+            checkSemantics(makeScope(scope), temp);
         }
     }
 
     else if (strcmp(Node->token, "BLOCK") == 0) { 
-        semanticChecks(makeScope(scope), Node->left); 
+        checkSemantics(makeScope(scope), Node->left); 
     }
 
     else if (strcmp(Node->token, "IF") == 0) { 
         // check that condition is of type bool
-        char* conditionType = semanticChecks(scope, Node->left->left);
+        char* conditionType = checkSemantics(scope, Node->left->left);
         if (strcmp("BOOL", conditionType) != 0) {
             printf("ERROR: if statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
             free(Node);
@@ -647,9 +668,9 @@ char* semanticChecks(Scope* scope, node* Node) {
         addLinkedListNode(scope, item);
 
         if (strcmp(Node->right->token, "BLOCK") == 0)
-            semanticChecks(scope, Node->right); // if - single line statement
+            checkSemantics(scope, Node->right); // if - single line statement
         else
-            semanticChecks(makeScope(scope), Node->right); // if - multi line block
+            checkSemantics(makeScope(scope), Node->right); // if - multi line block
     }
 
     else if (strcmp(Node->token, "ELSE") == 0) {
@@ -658,9 +679,9 @@ char* semanticChecks(Scope* scope, node* Node) {
         addLinkedListNode(scope, item);
 
         if (strcmp(Node->left->left->token, "BLOCK") == 0)
-            semanticChecks(scope, Node->left); // if - multi line block 
+            checkSemantics(scope, Node->left); // if - multi line block 
         else
-            semanticChecks(makeScope(scope), Node->left); // if - single line statement 
+            checkSemantics(makeScope(scope), Node->left); // if - single line statement 
     }
 
     else if (strcmp(Node->token, "DO WHILE") == 0) {
@@ -669,14 +690,14 @@ char* semanticChecks(Scope* scope, node* Node) {
         addLinkedListNode(scope, item);
 
         // check that condition is of type bool
-        char* conditionType = semanticChecks(scope, Node->right);
+        char* conditionType = checkSemantics(scope, Node->right);
         if (strcmp("BOOL", conditionType) != 0) {
             printf("ERROR: do-while loop statement condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
             free(Node);
             free(scope);
             exit(1);
         }
-        semanticChecks(scope, Node->left); 
+        checkSemantics(scope, Node->left); 
     }
 
     else if (strcmp(Node->token, "WHILE") == 0) {
@@ -684,7 +705,7 @@ char* semanticChecks(Scope* scope, node* Node) {
         LinkedListNode* item = makeVarNode("while", NULL, NULL, NULL);
         addLinkedListNode(scope, item);
 
-        char* conditionType = semanticChecks(scope, Node->left);
+        char* conditionType = checkSemantics(scope, Node->left);
         if (strcmp("BOOL", conditionType) != 0) {
             printf("ERROR: while loop statement condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
             free(Node);
@@ -693,9 +714,9 @@ char* semanticChecks(Scope* scope, node* Node) {
         }
 
         if (strcmp(Node->right->token, "BLOCK") == 0)
-            semanticChecks(scope, Node->right); // while - multi line block 
+            checkSemantics(scope, Node->right); // while - multi line block 
         else
-            semanticChecks(makeScope(scope), Node->right); // while - single line statement
+            checkSemantics(makeScope(scope), Node->right); // while - single line statement
     }
 
     else if (strcmp(Node->token, "FOR") == 0) {
@@ -710,10 +731,10 @@ char* semanticChecks(Scope* scope, node* Node) {
         if (strcmp("ASSIGN", Node->left->token) == 0) {
             // check the assign statement
             if (strcmp(Node->left->left->token, "VAR") == 0)
-                semanticChecks(forLoopScope, Node->left->left);
+                checkSemantics(forLoopScope, Node->left->left);
 
             // check condition type
-            char* conditionType = semanticChecks(forLoopScope, Node->left->right);
+            char* conditionType = checkSemantics(forLoopScope, Node->left->right);
             if (strcmp("BOOL", conditionType) != 0) {
                 printf("ERROR: for loop condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
                 free(Node);
@@ -724,12 +745,12 @@ char* semanticChecks(Scope* scope, node* Node) {
 
             // check if there is an update statement
             if (Node->left->right->right != NULL) {
-                semanticChecks(forLoopScope, Node->left->right->right);
+                checkSemantics(forLoopScope, Node->left->right->right);
             }
         }
         else { // if there is no var declaration statement then the expression and update pointers are different
             // check condition type
-            char* conditionType = semanticChecks(forLoopScope, Node->left);
+            char* conditionType = checkSemantics(forLoopScope, Node->left);
             if (strcmp("BOOL", conditionType) != 0) {
                 printf("ERROR: for loop condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
                 free(Node);
@@ -740,12 +761,12 @@ char* semanticChecks(Scope* scope, node* Node) {
 
             // check if there is an update statement
             if (Node->left->right != NULL) {
-                semanticChecks(forLoopScope, Node->left->right);
+                checkSemantics(forLoopScope, Node->left->right);
             }
         }
 
         // check the semantics of the for loop block
-        semanticChecks(forLoopScope, Node->right->left->left);
+        checkSemantics(forLoopScope, Node->right->left->left);
     }
 
 
@@ -753,11 +774,11 @@ char* semanticChecks(Scope* scope, node* Node) {
         // if there is only one update statement without ','
         if (strcmp(Node->left->token, "EXPRESSION") == 0 
             || strcmp(Node->left->token, "ID ASSIGN") == 0) {
-            semanticChecks(scope, Node->left);
+            checkSemantics(scope, Node->left);
         }
         else { // if there are multiple update statements seperated by ','
-            semanticChecks(scope, Node->left->left); // check the current update statement
-            semanticChecks(scope, Node->left->right); // recursive call to the next update statement
+            checkSemantics(scope, Node->left->left); // check the current update statement
+            checkSemantics(scope, Node->left->right); // recursive call to the next update statement
         }
     }
 
@@ -766,9 +787,9 @@ char* semanticChecks(Scope* scope, node* Node) {
     //? * * * * * * Expressions and Other * * * * * * *//
 
     else if (strcmp(Node->token, "DECLERATION") == 0) {
-        semanticChecks(scope, Node->left);
+        checkSemantics(scope, Node->left);
         if (Node->right != NULL)
-            semanticChecks(scope, Node->right);
+            checkSemantics(scope, Node->right);
     }
 
     else if (strcmp(Node->token, "VAR") == 0) { 
@@ -780,7 +801,7 @@ char* semanticChecks(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "ASSIGN") == 0) {
-        return semanticChecks(scope, Node->left);
+        return checkSemantics(scope, Node->left);
     }
 
     else if (strcmp(Node->token, "ID ASSIGN") == 0) {
@@ -792,15 +813,49 @@ char* semanticChecks(Scope* scope, node* Node) {
             free(scope);
             exit(1);
         }
-        char* foundType = semanticChecks(scope, Node->right);
+        char* foundType = checkSemantics(scope, Node->right);
         if ((strcmp(var->type, "INT*") == 0) || (strcmp(var->type, "DOUBLE*") == 0) || (strcmp(var->type, "FLOAT*") == 0) || (strcmp(var->type, "CHAR*") == 0)) {
             if (strcmp(Node->right->left->left->token, "&") == 0) {
-
                 // check that the type of the identifier we want to get the address of matches the type of the pointer
                 char* expectedType = checkArithmetics("&", foundType, NULL);
+                if (expectedType == NULL) {
+                    if (strcmp(foundType, "NULL") != 0) {
+                        if (strcmp(expectedType, foundType) != 0) {
+                            printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", var->name, expectedType, foundType);
+                            free(Node);
+                            free(scope);
+                            exit(1);
+                        }
+                    }
+                }
+                return NULL;
+            }
+            else if (strcmp(Node->right->left->left->token, "* (pointer)") == 0) {
+    
+                // check that the type of the identifier we want to get the address of matches the type of the pointer
+                char* expectedType = checkArithmetics("*", foundType, NULL);
                 if (strcmp(foundType, "NULL") != 0) {
                     if (strcmp(expectedType, foundType) != 0) {
-                        printf("ERROR: type mismatch at declaration of identifier '*%s', expected '%s' but found '%s'.\n", var->name, expectedType, foundType);
+                        printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", var->name, var->type, expectedType);
+                        free(Node);
+                        free(scope);
+                        exit(1);
+                    }
+                }
+
+                return NULL;
+            }
+            else if (strcmp(foundType, "NULL") == 0) {
+                return NULL;
+            }
+        }
+        else if ((strcmp(foundType, "INT*") == 0) || (strcmp(foundType, "DOUBLE*") == 0) || (strcmp(foundType, "FLOAT*") == 0) || (strcmp(foundType, "CHAR*") == 0)) {
+            if (strcmp(Node->right->left->left->token, "* (pointer)") == 0) {
+                // check that the type of the identifier we want to get the value of matches the type of the identifier we want to assign to
+                char* expectedType = checkArithmetics("*", foundType, NULL);
+                if ((expectedType != NULL) && (strcmp(foundType, "NULL") != 0)) {
+                    if (strcmp(var->type, expectedType) != 0) {
+                        printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", var->name, var->type, expectedType);
                         free(Node);
                         free(scope);
                         exit(1);
@@ -810,6 +865,7 @@ char* semanticChecks(Scope* scope, node* Node) {
                 return NULL;
             }
         }
+
         if (strcmp(var->type, foundType) != 0) {
             printf("ERROR: type mismatch for identifier '%s', expected '%s' but found '%s'.\n", Node->left->token, var->type, foundType);
             free(var);
@@ -828,10 +884,15 @@ char* semanticChecks(Scope* scope, node* Node) {
             exit(1);
         }
         //check if given type is of type pointer and if so we need to check its value type
-        char* foundType = semanticChecks(scope, Node->right);
+        char* foundType = checkSemantics(scope, Node->right);
+        if ((strcmp(foundType, "INT*") == 0) || (strcmp(foundType, "DOUBLE*") == 0) || (strcmp(foundType, "FLOAT*") == 0) || (strcmp(foundType, "CHAR*") == 0)) {
+            if (strcmp(Node->right->left->left->token, "* (pointer)") == 0) {
+                foundType = checkArithmetics("*", foundType, NULL);
+            }
+        }
         char* expectedType = checkArithmetics("*", var->type, NULL);
-        if (strcmp(foundType, "NULL") != 0) {
-            if (strcmp(expectedType, foundType) != 0) {
+        if (expectedType != NULL) {
+            if ((strcmp(foundType, "NULL") == 0) || (strcmp(expectedType, foundType) != 0)) {
                 printf("ERROR: type mismatch at declaration of identifier '*%s', expected '%s' but found '%s'.\n", var->name, expectedType, foundType);
                 free(Node);
                 free(scope);
@@ -840,9 +901,69 @@ char* semanticChecks(Scope* scope, node* Node) {
         }
     }
 
-    // else if (strcmp(Node->token, "ID") == 0) {
-    //     return semanticChecks(scope, Node->left);
-    // }
+    else if (strcmp(Node->token, "ASSIGN[]") == 0) {
+        LinkedListNode* varNode = makeVarNode(Node->left->left->token, NULL, NULL, NULL);
+        Variable* var = findVarNodeInScope(scope, varNode);
+        if (var == NULL) {
+            printf("ERROR: identifier '%s' was not found.\n", Node->left->token);
+            free(var);
+            free(scope);
+            exit(1);
+        }
+
+        // check that the id is of type string
+        if (strcmp(var->type, "STRING") != 0) {
+            printf("ERROR: can't assign index value to identifier of type '%s', it is only possible for type 'STRING'.\n", var->type);
+            free(Node);
+            free(scope);
+            exit(1);
+        }
+
+        // check that expression is of type int
+        char* indexType = checkSemantics(scope, Node->left->right);
+        if (strcmp(indexType, "INT") != 0) {
+            printf("ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", var->name, indexType);
+            free(Node);
+            free(scope);
+            exit(1); 
+        }
+
+
+        // check that string size is not an expression but a simple value to check if that index is valid
+        if ((Node->left->right->left->token != NULL) && (strcmp(Node->left->right->left->token, "VALUE") == 0) && 
+            (Node->left->right->left->right == NULL) && (Node->left->right->left->left != NULL))  { // the pointers help against segmenration faults
+            
+            // check that index expression is less than or equal to the declared length and that its not negative
+            int indexValue = atoi(Node->left->right->left->left->left->token);
+
+            if (indexValue < 0) {
+                printf("ERROR: index is out of bounds for identifier '%s', index '%d' is invalid.\n", var->name, indexValue);
+                free(Node);
+                free(scope);
+                exit(1); 
+            }
+            
+            if (var->len != NULL) {
+                int maxStringLen = atoi(var->len);
+                if (indexValue > maxStringLen) {
+                    printf("ERROR: index is out of bounds for identifier '%s', expected index <= '%d' but found index '%d'.\n", var->name, maxStringLen, indexValue);
+                    free(Node);
+                    free(scope);
+                    exit(1); 
+                }
+            }
+        }
+
+        // check that if we assing an id then it is of type char
+        char* assignemtType = checkSemantics(scope, Node->right->left);
+        if ((strcmp("NULL",assignemtType) != 0) && (strcmp("CHAR", assignemtType) != 0)) {
+            printf("ERROR: type mismatch for identifier '%s', expected 'CHAR' or 'NULL' but found '%s'.\n", var->name, assignemtType);
+            free(Node);
+            free(scope);
+            exit(1);
+        }
+    }
+
 
 
     else if (strcmp(Node->token, "EXPRESSION") == 0) {
@@ -852,17 +973,30 @@ char* semanticChecks(Scope* scope, node* Node) {
             return "NULL";
         }
         else if (strcmp(Node->left->token, "&") == 0) { 
-            char* type = semanticChecks(scope, Node->left->left);
-            // char* resType = checkArithmetics("&", type, NULL);
-            // if (resType == NULL) {
-            //     printf("ERROR: type mismatch on '%s' operator, expected expression of type 'INT/DOUBLE/FLOAT/CHAR', but found '%s'.\n", Node->left->token, type);
-            //     free(scope);
-            //     exit(1);
-            // }
-            return type; //resType;
+            char* type = checkSemantics(scope, Node->left->left);
+            if ((strcmp(type, "INT*") == 0) || (strcmp(type, "FLOAT*") == 0) || (strcmp(type, "DOUBLE*") == 0) || (strcmp(type, "CHAR*") == 0)) {
+                printf("ERROR: using '&' on identifier of type '%s' is undefined.\n", type);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+            return checkSemantics(scope, Node->left->left);
+        }
+        else if (strcmp(Node->left->token, "* (pointer)") == 0) { 
+            char* type = checkSemantics(scope, Node->left->left);
+            if ((strcmp(type, "INT") == 0) || (strcmp(type, "FLOAT") == 0) || (strcmp(type, "DOUBLE") == 0) || (strcmp(type, "CHAR") == 0) || (strcmp(type, "BOOL") == 0)) {
+                printf("ERROR: using '*' on identifier of type '%s' is undefined.\n", type);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+            return type;
+        }
+        else if (strcmp(Node->left->token, "*( )") == 0) {
+            return checkSemantics(scope, Node->left->left);
         }
         else if (strcmp(Node->left->left->token, "FUNCTION CALL") == 0) {
-            return semanticChecks(scope, Node->left->left);
+            return checkSemantics(scope, Node->left->left);
         }
         else if (strcmp(Node->left->left->token, "ID") == 0) {
             // try to find var in a function argument
@@ -885,10 +1019,10 @@ char* semanticChecks(Scope* scope, node* Node) {
             return Node->left->left->token; //* this is the type of the value from yacc
         }
         else if (strcmp(Node->left->token, "( )") == 0) {
-            return semanticChecks(scope, Node->left->left); //* this is the type of the value from yacc
+            return checkSemantics(scope, Node->left->left); //* this is the type of the value from yacc
         }
         else if (strcmp(Node->left->token, "| |") == 0) {
-            char* type = semanticChecks(scope, Node->left->left);
+            char* type = checkSemantics(scope, Node->left->left);
             char* resType = checkArithmetics("||", type, NULL);
             if (resType == NULL) {
                 printf("ERROR: type mismatch on '%s' operator, expected expression of type 'STRING', but found '%s'.\n", Node->left->token, type);
@@ -898,7 +1032,7 @@ char* semanticChecks(Scope* scope, node* Node) {
             return resType;
         }
         else if (strcmp(Node->left->token, "! (not)") == 0) {
-            char* type = semanticChecks(scope, Node->left->left);
+            char* type = checkSemantics(scope, Node->left->left);
             char* resType = checkArithmetics("!", type, NULL);
             if (resType == NULL) {
                 printf("ERROR: type mismatch on '%s' operator, expected expression of type 'BOOL', but found '%s'.\n", Node->left->token, type);
@@ -930,16 +1064,37 @@ char* semanticChecks(Scope* scope, node* Node) {
                 }
             }
 
-            char* leftType = semanticChecks(scope, Node->left->left);
-            char* rightType = semanticChecks(scope, Node->left->right);
-            char* resType = checkArithmetics(Node->left->token, leftType, rightType);
+            char* leftType = checkSemantics(scope, Node->left->left);
+            char* rightType = checkSemantics(scope, Node->left->right);
+            if ((strcmp(Node->left->token, "+") == 0) || (strcmp(Node->left->token, "-") == 0) || (strcmp(Node->left->token, "*") == 0) || (strcmp(Node->left->token, "/") == 0)) {
+                if ((strcmp(leftType, "INT*") == 0) || (strcmp(leftType, "DOUBLE*") == 0) || (strcmp(leftType, "FLOAT*") == 0) || (strcmp(leftType, "CHAR*") == 0)) {
+                    leftType = "INT";
+                }
 
-            if (resType == NULL) {
-                printf("ERROR: type mismatch on '%s' operator.\n", Node->left->token);
-                free(scope);
-                exit(1);
+                if ((strcmp(rightType, "INT*") == 0) || (strcmp(rightType, "DOUBLE*") == 0) || (strcmp(rightType, "FLOAT*") == 0) || (strcmp(rightType, "CHAR*") == 0)) {
+                    rightType = "INT";
+                }
+                
+                //!! check what to do here?
+                // printf("left: %s\n", leftType);
+                // printf("right: %s\n", rightType);
+                char* resType = checkArithmetics(Node->left->token, leftType, rightType);
+                if (resType == NULL) {
+                    printf("ERROR: type mismatch on '%s' operator.\n", Node->left->token);
+                    free(scope);
+                    exit(1);
+                }
+                return resType;
             }
-            return resType;
+            else {
+                char* resType = checkArithmetics(Node->left->token, leftType, rightType);
+                if (resType == NULL) {
+                    printf("ERROR: type mismatch on '%s' operator.\n", Node->left->token);
+                    free(scope);
+                    exit(1);
+                } 
+                return resType;
+            }  
         }
 
         //todo: other types of expressions.....
@@ -987,7 +1142,7 @@ char* semanticChecks(Scope* scope, node* Node) {
                     exit(1); 
                 }
 
-                char* paramType = semanticChecks(scope, temp);
+                char* paramType = checkSemantics(scope, temp);
 
                 if (strcmp(paramType, func->args[paramCounter]->type) != 0) {
                     printf("ERROR: param type mismatch in function call '%s()' on param '%s'\n",
@@ -1028,7 +1183,7 @@ char* semanticChecks(Scope* scope, node* Node) {
             }
         }
         else {
-            char* type = semanticChecks(scope, Node->left);
+            char* type = checkSemantics(scope, Node->left);
             if (strcmp(type, currentFunction->returnType) != 0) {
                 printf("ERROR: return type mismatch in function '%s', expected '%s' but found '%s'.\n", currentFunction->name, currentFunction->returnType, type);
                 free(scope);
