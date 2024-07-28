@@ -222,13 +222,26 @@ void findAndInitVars(Scope* scope, node* Node, char* type) {
     else {
         if (strcmp(Node->left->token, "ASSIGN") == 0) { 
             char* foundType = semanticChecks(scope, Node->left->left);
-            if (strcmp(type, foundType) != 0) {
+            //check if given type is of type pointer and if so we need to check its value type
+            if ((strcmp(type, "INT*") == 0) || (strcmp(type, "DOUBLE*") == 0) || (strcmp(type, "FLOAT*") == 0) || (strcmp(type, "CHAR*") == 0)) {
+                char* expectedType = checkArithmetics("*", type, NULL);
+                if (strcmp(foundType, "NULL") != 0) {
+                    if (strcmp(expectedType, foundType) != 0) {
+                        printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", Node->token, expectedType, foundType);
+                        free(Node);
+                        free(scope);
+                        exit(1);
+                    }
+                }
+            }
+            //else we are doing regular assignment so we only check if the value type matches the declaration type
+            else if (strcmp(type, foundType) != 0) {
                 printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", Node->token, type, foundType);
                 free(Node);
                 free(scope);
                 exit(1);
             }
-            addLinkedListNode(scope, makeVarNode(Node->token, Node->left->left->left->left->left->token, type, NULL));
+            addLinkedListNode(scope, makeVarNode(Node->token, NULL, type, NULL)); //! remember to remove the values from program
         }
     }
 
@@ -645,9 +658,9 @@ char* semanticChecks(Scope* scope, node* Node) {
         addLinkedListNode(scope, item);
 
         if (strcmp(Node->left->left->token, "BLOCK") == 0)
-            semanticChecks(scope, Node->left); // if - single line statement
+            semanticChecks(scope, Node->left); // if - multi line block 
         else
-            semanticChecks(makeScope(scope), Node->left); // if - multi line block 
+            semanticChecks(makeScope(scope), Node->left); // if - single line statement 
     }
 
     else if (strcmp(Node->token, "DO WHILE") == 0) {
@@ -680,9 +693,9 @@ char* semanticChecks(Scope* scope, node* Node) {
         }
 
         if (strcmp(Node->right->token, "BLOCK") == 0)
-            semanticChecks(scope, Node->right); // while - single line statement
+            semanticChecks(scope, Node->right); // while - multi line block 
         else
-            semanticChecks(makeScope(scope), Node->right); // while - multi line block
+            semanticChecks(makeScope(scope), Node->right); // while - single line statement
     }
 
     else if (strcmp(Node->token, "FOR") == 0) {
@@ -767,8 +780,7 @@ char* semanticChecks(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "ASSIGN") == 0) {
-        char* type = semanticChecks(scope, Node->left);
-        return type;
+        return semanticChecks(scope, Node->left);
     }
 
     else if (strcmp(Node->token, "ID ASSIGN") == 0) {
@@ -781,28 +793,57 @@ char* semanticChecks(Scope* scope, node* Node) {
             exit(1);
         }
         char* foundType = semanticChecks(scope, Node->right);
+        printf("1: %s\n", foundType);
+        printf("2: %s\n", var->type);
+        printf("3: %s\n", Node->right->token);
+        printf("3: %s\n", Node->right->left->token);
+        printf("3: %s\n", Node->right->left->left->token);
+        exit(1);
+        if ((strcmp(var->type, "INT*") == 0) || (strcmp(var->type, "DOUBLE*") == 0) || (strcmp(var->type, "FLOAT*") == 0) || (strcmp(var->type, "CHAR*") == 0)) {
+            if (strcmp(Node->right->left->left->token, "&") == 0) {
+                return NULL;
+            }
+        }
         if (strcmp(var->type, foundType) != 0) {
             printf("ERROR: type mismatch for identifier '%s', expected '%s' but found '%s'.\n", Node->left->token, var->type, foundType);
             free(var);
             free(scope);
             exit(1);
         }
-        //! saving the token as if its VALUE, need to make it work for every expression
-        //var->value = Node->right->left->left->left->left->token; 
     }
-
+    
+    else if (strcmp(Node->token, "* ID ASSIGN") == 0) {
+        LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL, NULL);
+        Variable* var = findVarNodeInScope(scope, varNode);
+        if (var == NULL) {
+            printf("ERROR: identifier '%s' was not found.\n", Node->left->token);
+            free(var);
+            free(scope);
+            exit(1);
+        }
+        //check if given type is of type pointer and if so we need to check its value type
+        char* foundType = semanticChecks(scope, Node->right);
+        char* expectedType = checkArithmetics("*", var->type, NULL);
+        if (strcmp(foundType, "NULL") != 0) {
+            if (strcmp(expectedType, foundType) != 0) {
+                printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", var->name, expectedType, foundType);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+        }
+    }
 
 
 
     else if (strcmp(Node->token, "EXPRESSION") == 0) {
         // expressions have many options...
-
+        printf("okokokokokokokokokokokok, %s", Node->left->token);
         if (strcmp(Node->left->token, "NULL") == 0) {
             return "NULL";
         }
         else if (strcmp(Node->left->left->token, "FUNCTION CALL") == 0) {
-            char* type = semanticChecks(scope, Node->left->left);
-            return type; 
+            return semanticChecks(scope, Node->left->left);
         }
         else if (strcmp(Node->left->left->token, "ID") == 0) {
             // try to find var in a function argument
@@ -845,6 +886,17 @@ char* semanticChecks(Scope* scope, node* Node) {
                 free(scope);
                 exit(1);
             }
+            return resType;
+        }
+        else if (strcmp(Node->left->token, "&") == 0) { 
+            char* type = semanticChecks(scope, Node->left);
+            char* resType = checkArithmetics("&", type, NULL);
+            if (resType == NULL) {
+                printf("ERROR: type mismatch on '%s' operator, expected expression of type 'INT/DOUBLE/FLOAT/CHAR', but found '%s'.\n", Node->left->token, type);
+                free(scope);
+                exit(1);
+            }
+            printf("27: %s", resType);
             return resType;
         }
         else if (strcmp(Node->left->token, "+") == 0

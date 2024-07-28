@@ -208,7 +208,7 @@ many_string : ID '[' INT_VAL ']' assignment ',' many_string
              
 
 
-var_declaration : VAR param_type ':' many_id ';' {$$ = mknode("VAR", $2, $4);}
+var_declaration : VAR param_type ':' many_id ';' {$$ = mknode("VAR", $2, $4);} 
 
 many_id : ID assignment ',' many_id {$$ = mknode($1, $2, $4);}
           | ID ',' many_id {$$ = mknode($1, NULL, $3);} //mknode($1, $3, NULL)
@@ -232,7 +232,7 @@ param_type : INT {$$ = mknode($1,NULL,NULL);}
 
 
 expression : NULL_VALUE {$$ = mknode($1, NULL, NULL);}
-            | ADDRESS ID {$$ = mknode("&", mknode($2,NULL,NULL), NULL);} 
+            | ADDRESS ID {$$ = mknode("&", mknode("ID", mknode($1, NULL, NULL), NULL), NULL);} 
             | MULT ID {$$ = mknode("*", mknode($2,NULL,NULL), NULL);}
             | NOT expression {$$ = mknode("! (not)", mknode("EXPRESSION", $2, NULL), NULL);}
             | expression LESSER expression {$$ = mknode("<", mknode("EXPRESSION", $1, NULL), mknode("EXPRESSION", $3, NULL));}

@@ -6,7 +6,9 @@ public int foo(args>> int: x,b) : static {
 
 
     public bool goo(args>> int: z) : static {
-        var int: lol <- foo(1,2);
+        var int*: lol <- null;
+        var bool: ok;
+        lol <- &ok;
         return false;
     }
 
