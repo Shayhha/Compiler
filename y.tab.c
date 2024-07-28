@@ -2260,7 +2260,7 @@ yyreduce:
 
   case 106: /* expression: ADDRESS ID  */
 #line 235 "Comp.yacc"
-                         {(yyval.nodeval) = mknode("&", mknode("ID", mknode((yyvsp[-1].strval), NULL, NULL), NULL), NULL);}
+                         {(yyval.nodeval) = mknode("&", mknode("EXPRESSION", mknode("VALUE", mknode("ID", mknode((yyvsp[0].strval), NULL, NULL), NULL), NULL), NULL), NULL);}
 #line 2265 "y.tab.c"
     break;
 

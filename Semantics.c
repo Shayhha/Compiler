@@ -793,14 +793,20 @@ char* semanticChecks(Scope* scope, node* Node) {
             exit(1);
         }
         char* foundType = semanticChecks(scope, Node->right);
-        printf("1: %s\n", foundType);
-        printf("2: %s\n", var->type);
-        printf("3: %s\n", Node->right->token);
-        printf("3: %s\n", Node->right->left->token);
-        printf("3: %s\n", Node->right->left->left->token);
-        exit(1);
         if ((strcmp(var->type, "INT*") == 0) || (strcmp(var->type, "DOUBLE*") == 0) || (strcmp(var->type, "FLOAT*") == 0) || (strcmp(var->type, "CHAR*") == 0)) {
             if (strcmp(Node->right->left->left->token, "&") == 0) {
+
+                // check that the type of the identifier we want to get the address of matches the type of the pointer
+                char* expectedType = checkArithmetics("&", foundType, NULL);
+                if (strcmp(foundType, "NULL") != 0) {
+                    if (strcmp(expectedType, foundType) != 0) {
+                        printf("ERROR: type mismatch at declaration of identifier '*%s', expected '%s' but found '%s'.\n", var->name, expectedType, foundType);
+                        free(Node);
+                        free(scope);
+                        exit(1);
+                    }
+                }
+
                 return NULL;
             }
         }
@@ -826,7 +832,7 @@ char* semanticChecks(Scope* scope, node* Node) {
         char* expectedType = checkArithmetics("*", var->type, NULL);
         if (strcmp(foundType, "NULL") != 0) {
             if (strcmp(expectedType, foundType) != 0) {
-                printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", var->name, expectedType, foundType);
+                printf("ERROR: type mismatch at declaration of identifier '*%s', expected '%s' but found '%s'.\n", var->name, expectedType, foundType);
                 free(Node);
                 free(scope);
                 exit(1);
@@ -834,13 +840,26 @@ char* semanticChecks(Scope* scope, node* Node) {
         }
     }
 
+    // else if (strcmp(Node->token, "ID") == 0) {
+    //     return semanticChecks(scope, Node->left);
+    // }
 
 
     else if (strcmp(Node->token, "EXPRESSION") == 0) {
         // expressions have many options...
-        printf("okokokokokokokokokokokok, %s", Node->left->token);
+
         if (strcmp(Node->left->token, "NULL") == 0) {
             return "NULL";
+        }
+        else if (strcmp(Node->left->token, "&") == 0) { 
+            char* type = semanticChecks(scope, Node->left->left);
+            // char* resType = checkArithmetics("&", type, NULL);
+            // if (resType == NULL) {
+            //     printf("ERROR: type mismatch on '%s' operator, expected expression of type 'INT/DOUBLE/FLOAT/CHAR', but found '%s'.\n", Node->left->token, type);
+            //     free(scope);
+            //     exit(1);
+            // }
+            return type; //resType;
         }
         else if (strcmp(Node->left->left->token, "FUNCTION CALL") == 0) {
             return semanticChecks(scope, Node->left->left);
@@ -886,17 +905,6 @@ char* semanticChecks(Scope* scope, node* Node) {
                 free(scope);
                 exit(1);
             }
-            return resType;
-        }
-        else if (strcmp(Node->left->token, "&") == 0) { 
-            char* type = semanticChecks(scope, Node->left);
-            char* resType = checkArithmetics("&", type, NULL);
-            if (resType == NULL) {
-                printf("ERROR: type mismatch on '%s' operator, expected expression of type 'INT/DOUBLE/FLOAT/CHAR', but found '%s'.\n", Node->left->token, type);
-                free(scope);
-                exit(1);
-            }
-            printf("27: %s", resType);
             return resType;
         }
         else if (strcmp(Node->left->token, "+") == 0
