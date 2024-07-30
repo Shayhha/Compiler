@@ -1,28 +1,16 @@
 
 public int foo(args>> int: a,b) : static {
-    var int*: y <- a;
-    var int*: gg;
-    var int: bg;
-    string mess1[10] <- "0123456789", mess44[5], mess55[12] <- "123131";
-    string mess2[6*6] <- "123";
-    var char: z;
+    var int*: x;
+    var int: i;
+    string mess1[20] <- "123";
+    var char*: j;
+    j <- &mess1[12];
 
-    public bool goo(args>> int: c) : static {
-        /*var char*: x <- null;
-        var char: z;
-        z <- *(x-5);*/
-
-        return false;
-    }
-
-    mess1[3] <- '3';
-
-    *y <- bg;
-    !(3<4);
-
-    for (var int: i<-0 ; i<5 ; i<-5, i<-foo(5,5)) 
+    for (*x<-5; i<5 ; i<-5, i<-foo(5,5)) 
         if (true)
             return 5;
+
+
 
     return 0;
 }

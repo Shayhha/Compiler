@@ -28,7 +28,13 @@ void printtree(node* node, int indent) {
     }
 
     // Print current node with indentation
-    if (strcmp(node->token,"") != 0) {
+    if (strcmp(node->token,"") != 0 && strcmp(node->token,"") != 0 && strcmp(node->token,"VALUE") != 0 
+        && strcmp(node->token,"INT") != 0 && strcmp(node->token,"FLOAT") != 0 && strcmp(node->token,"DOUBLE") != 0
+        && strcmp(node->token,"INT*") != 0 && strcmp(node->token,"FLOAT*") != 0 && strcmp(node->token,"DOUBLE*") != 0
+        && strcmp(node->token,"CHAR") != 0 && strcmp(node->token,"CHAR*") != 0 && strcmp(node->token,"") != 0
+        && strcmp(node->token,"BOOL") != 0 && strcmp(node->token,"DECLERATION") != 0 && strcmp(node->token,"EXPRESSION") != 0
+        && strcmp(node->token,"ID") != 0 && strcmp(node->token,"ASSIGN") != 0 && strcmp(node->token,"") != 0
+        && strcmp(node->token,"") != 0 && strcmp(node->token,"") != 0 && strcmp(node->token,"") != 0) {
         for (int i = 0; i < indent; i++) { // Adding tabulations
             printf("\t");
         }

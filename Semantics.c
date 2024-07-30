@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <regex.h> 
 #include "Helper.c"
 
 /* represents an argument like int num */
@@ -23,7 +22,6 @@ typedef struct Function {
 /* represents a variable like int count = 0 */
 typedef struct Variable {
     char* name;
-	char* value;
 	char* type;
     char* len;
 } Variable;
@@ -43,7 +41,7 @@ typedef struct Scope {
 
 /* # # # # # # # # # # function declarations # # # # # # # # # # */
 Scope* makeScope(Scope* father);
-LinkedListNode* makeVarNode(char* name, char* value, char* type, char* len);
+LinkedListNode* makeVarNode(char* name, char* type, char* len);
 LinkedListNode* makeFuncNode(char* name, char* returnType, int isStatic, int isPrivate);
 
 Argument* makeFuncArg(char* name, char* type);
@@ -58,10 +56,9 @@ char* findVarInFuncArgs(Scope* scope, char* arg);
 void findAndInitFuncArgs(LinkedListNode* item, node* temp);
 Function* findFuncNodeInScope(Scope* scope, LinkedListNode* node);
 Function* findFuncNodeInCurrentScope(Scope* scope, char* name);
-Function* getCurrentFunction(Scope* scope);
 int findMainFunction(Scope* scope);
+Function* getCurrentFunction(Scope* scope);
 
-int checkVar(char* type, char* value);
 char* checkArithmetics(char* operator, char* type1, char* type2);
 char* checkSemantics(Scope* scope, node* Node);
 void checktree(node* Node);
@@ -74,13 +71,12 @@ void printScope(Scope* stack);
 //? # # # # # # # # # # Linked-List Functions # # # # # # # # # # //
 
 /* function to create a new linked list node */
-LinkedListNode* makeVarNode(char* name, char* value, char* type, char* len) {
+LinkedListNode* makeVarNode(char* name, char* type, char* len) {
     Variable* newVar = (Variable*)malloc(sizeof(Variable));
     LinkedListNode* newNode = (LinkedListNode*)malloc(sizeof(LinkedListNode));
     if (newVar != NULL && newNode != NULL) {
         //initialize new var
         newVar->name = name;
-        newVar->value = value;
         newVar->type = type;
         newVar->len = len;
         //initialize new node with var 
@@ -166,16 +162,6 @@ void findAndInitFuncArgs(LinkedListNode* item, node* temp) {
         tempType = temp->left->token;
         variables = temp->right;
         do {
-            //!! check for redeclaration, need to add: " Scope* scope " to signiture
-            // char* currentArg = variables->token;
-            // if (findVarInFuncArgs(scope, currentArg) != NULL) {
-            //     printf("ERROR: redeclaration of identifier '%s', it has already been declared as a function argument in this scope.\n", currentArg);
-            //     free(item);
-            //     free(temp);
-            //     free(variables);
-            //     free(scope);
-            //     exit(1);
-            // }
             addArg(item->function, makeFuncArg(variables->token, tempType));
             variables = variables->left;
         } while (variables != NULL);  
@@ -188,6 +174,74 @@ void findAndInitFuncArgs(LinkedListNode* item, node* temp) {
             variables = variables->left;
         } while (variables != NULL);
         findAndInitFuncArgs(item, temp->right);
+    }
+}
+
+// function for adding a new variable to the for loop scope
+void findAndInitForLoopVars(Scope* scope, node* Node, char* type) {
+
+    // check if there are more variables to declare in this declaration statement
+    if (strcmp(Node->token, "") == 0) {
+        findAndInitForLoopVars(scope, Node->left, type);
+        findAndInitForLoopVars(scope, Node->right->left, type);
+    }
+    else {
+        char* id;
+        if (strcmp(Node->token, "ID ASSIGN") == 0) 
+            id = Node->left->token;
+        else if (strcmp(Node->token, "EXPRESSION") == 0) 
+            id = Node->left->left->left->token; 
+
+
+        // check if the variable we are declaring is used in the function argument declaration
+        Function* currentFunc = getCurrentFunction(scope);
+        if (currentFunc != NULL) {
+            for (size_t i = 0; i < currentFunc->countArgs; i++) {
+                if (strcmp(currentFunc->args[i]->name, id) == 0) {
+                    printf("ERROR: redeclaration of identifier '%s', it has already been declared in current function arguments.\n", id);
+                    free(Node);
+                    free(currentFunc);
+                    free(scope);
+                    exit(1); 
+                }
+            }
+        }
+
+        // check if the variable is already declared in the current scope
+        if (findVarNodeInCurrentScope(scope->father, id) != NULL) {
+            printf("ERROR: redeclaration of identifier '%s', it has already been declared in this scope.\n", id);
+            free(Node);
+            free(scope);
+            exit(1); 
+        }
+
+        // check if has assignment or not
+        if (strcmp(Node->token, "ID ASSIGN") != 0) { 
+            addLinkedListNode(scope, makeVarNode(id, type, NULL));
+        }
+        else {
+            char* foundType = checkSemantics(scope, Node->right);
+            //check if given type is of type pointer and if so we need to check its value type
+            if ((strcmp(type, "INT*") == 0) || (strcmp(type, "DOUBLE*") == 0) || (strcmp(type, "FLOAT*") == 0) || (strcmp(type, "CHAR*") == 0)) {
+                char* expectedType = checkArithmetics("*", type, NULL);
+                if (strcmp(foundType, "NULL") != 0) {
+                    if (strcmp(expectedType, foundType) != 0) {
+                        printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", id, expectedType, foundType);
+                        free(Node);
+                        free(scope);
+                        exit(1);
+                    }
+                }
+            }
+            //else we are doing regular assignment so we only check if the value type matches the declaration type
+            else if (strcmp(type, foundType) != 0) {
+                printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", id, type, foundType);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+            addLinkedListNode(scope, makeVarNode(id, type, NULL)); 
+        }
     }
 }
 
@@ -217,7 +271,7 @@ void findAndInitVars(Scope* scope, node* Node, char* type) {
 
     // check if has assignment or not
     if (Node->left == NULL) { 
-        addLinkedListNode(scope, makeVarNode(Node->token, NULL, type, NULL));
+        addLinkedListNode(scope, makeVarNode(Node->token, type, NULL));
     }
     else {
         if (strcmp(Node->left->token, "ASSIGN") == 0) { 
@@ -241,11 +295,11 @@ void findAndInitVars(Scope* scope, node* Node, char* type) {
                 free(scope);
                 exit(1);
             }
-            addLinkedListNode(scope, makeVarNode(Node->token, NULL, type, NULL)); //! remember to remove the values from program
+            addLinkedListNode(scope, makeVarNode(Node->token, type, NULL));
         }
     }
 
-    // check if there are more variables to declare in this declaration statement
+
     if (Node->right != NULL) { 
         findAndInitVars(scope, Node->right, type);
     }
@@ -316,9 +370,9 @@ void findAndInitStrings(Scope* scope, node* Node, char* type) {
             }
         }
 
-        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, NULL, type, stringMaxLen));
+        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, type, stringMaxLen));
     }
-    addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, NULL, type, NULL));
+    addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, type, NULL));
     
 
     // check if there are more declarations in this declaration
@@ -335,11 +389,6 @@ Variable* findVarNodeInScope(Scope* scope, LinkedListNode* node) {
         while (current != NULL && current->variable != NULL) { // added  && current->variable != NULL  for the case that there are not variables declared in the scopes
 
             if ((strcmp(current->variable->name, node->variable->name) == 0) && current->variable->type != NULL) {
-
-                if (node->variable->value != NULL) {
-                    if (!checkVar(current->variable->type, node->variable->value))
-                        return NULL;
-                }
                 return current->variable;
             } 
 
@@ -348,39 +397,6 @@ Variable* findVarNodeInScope(Scope* scope, LinkedListNode* node) {
         return findVarNodeInScope(scope->father, node); //call recursively again to search in father's list
     }
     return NULL;
-}
-
-
-/* function to find function in any scope, recursively */
-Function* findFuncNodeInScope(Scope* scope, LinkedListNode* node) {
-    if (scope != NULL && node != NULL) {
-        LinkedListNode* current = scope->list;
-        // go through all elements in linked list node
-        while (current != NULL) {
-            if ((current->function != NULL) && (strcmp(current->function->name, node->function->name) == 0)) {
-                return current->function;
-            }            
-            current = current->next; 
-        }
-        return findFuncNodeInScope(scope->father, node); //call recursively again to search in father's list
-    }
-    return NULL; 
-}
-
-
-/* function to find function in a given scope only, not recursive */
-Function* findFuncNodeInCurrentScope(Scope* scope, char* name) {
-    if (scope != NULL) {
-        LinkedListNode* current = scope->list;
-        // go through all elements in linked list node
-        while (current != NULL) {
-            if ((current->function != NULL) && (strcmp(current->function->name, name) == 0)) {
-                return current->function;
-            }            
-            current = current->next; 
-        }
-    }
-    return NULL; 
 }
 
 /* function to find variable in a given scope only, not recursive */
@@ -394,23 +410,6 @@ Variable* findVarNodeInCurrentScope(Scope* scope, char* name) {
             }            
             current = current->next; 
         } 
-    }
-    return NULL; 
-}
-
-/* function for getting the current function, the one we are currently in the scope of */
-Function* getCurrentFunction(Scope* scope) { 
-    if (scope != NULL) {
-        LinkedListNode* current = scope->father->list; 
-        // go through all elements in linked list node
-        while (current->next != NULL) { 
-            current = current->next; 
-        }
-
-        if (current->function == NULL) {
-            return getCurrentFunction(scope->father);
-        }
-        return current->function; 
     }
     return NULL; 
 }
@@ -453,40 +452,56 @@ int findMainFunction(Scope* scope) {
 }
 
 
-
-//? # # # # # # # # # # Semantic Functions # # # # # # # # # # //
-
-/* function to check if variables match valid types */
-int checkVar(char* type, char* value) {
-    regex_t regex;
-    int result;
-    char* pattern = ""; 
-
-    if (strcmp(type, "INT") == 0) // combined hex and int
-        pattern = "^(([1-9][0-9]*|0)|(0x|0X)[0-9A-F]+)$";
-    else if (strcmp(type, "FLOAT") == 0 )
-        pattern = "^([0-9]+\\.[0-9]+f|[0-9]+f)$";
-    else if (strcmp(type, "DOUBLE") == 0 )
-        pattern = "^([0-9]*(\\.[0-9]*)?([Ee][+-]?[0-9]+)?)$";
-    else if (strcmp(type, "CHAR") == 0 )
-        pattern = "^(\'.\')$";
-    else if (strcmp(type, "STRING") == 0 )
-        pattern = "^(\".*\")$";
-    else if (strcmp(type, "ID") == 0 )
-        pattern = "^([a-zA-Z][a-zA-Z0-9_]*)$";
-    else if (strcmp(type, "FUNCTION CALL") == 0 ) // was 'func'
-        pattern = "^()$";
-    else 
-        return 0;
-
-    //compile regular expression
-    regcomp(&regex, pattern, REG_EXTENDED);
-    //execute regular expression match
-    result = regexec(&regex, value, 0, NULL, 0);
-
-    return !result;
+/* function to find function in any scope, recursively */
+Function* findFuncNodeInScope(Scope* scope, LinkedListNode* node) {
+    if (scope != NULL && node != NULL) {
+        LinkedListNode* current = scope->list;
+        // go through all elements in linked list node
+        while (current != NULL) {
+            if ((current->function != NULL) && (strcmp(current->function->name, node->function->name) == 0)) {
+                return current->function;
+            }            
+            current = current->next; 
+        }
+        return findFuncNodeInScope(scope->father, node); //call recursively again to search in father's list
+    }
+    return NULL; 
 }
 
+
+/* function to find function in a given scope only, not recursive */
+Function* findFuncNodeInCurrentScope(Scope* scope, char* name) {
+    if (scope != NULL) {
+        LinkedListNode* current = scope->list;
+        // go through all elements in linked list node
+        while (current != NULL) {
+            if ((current->function != NULL) && (strcmp(current->function->name, name) == 0)) {
+                return current->function;
+            }            
+            current = current->next; 
+        }
+    }
+    return NULL; 
+}
+
+/* function for getting the current function, the one we are currently in the scope of */
+Function* getCurrentFunction(Scope* scope) { 
+    if (scope != NULL) {
+        LinkedListNode* current = scope->father->list; 
+        // go through all elements in linked list node
+        while (current->next != NULL) { 
+            current = current->next; 
+        }
+
+        if (current->function == NULL) {
+            return getCurrentFunction(scope->father);
+        }
+        return current->function; 
+    }
+    return NULL; 
+}
+
+//? # # # # # # # # # # Semantic Functions # # # # # # # # # # //
 
 /* function that checks arithmetic operations on given types and operator and returns result type */
 char* checkArithmetics(char* operator, char* type1, char* type2) {
@@ -501,6 +516,14 @@ char* checkArithmetics(char* operator, char* type1, char* type2) {
                 else if ((strcmp(type1, "INT")==0 && strcmp(type2, "FLOAT")==0) || (strcmp(type1, "FLOAT")==0 && strcmp(type2, "INT")==0)
                             || (strcmp(type1, "FLOAT")==0 && strcmp(type2, "FLOAT")==0))
                     return "FLOAT";
+                else if ((strcmp(type1, "INT*")==0 && strcmp(type2, "INT")==0) || (strcmp(type1, "FLOAT*")==0 && strcmp(type2, "INT")==0) || 
+                            (strcmp(type1, "DOUBLE*")==0 && strcmp(type2, "INT")==0) || (strcmp(type1, "CHAR*")==0 && strcmp(type2, "INT")==0)) {
+                    return type1;
+                }
+                else if ((strcmp(type2, "INT*")==0 && strcmp(type1, "INT")==0) || (strcmp(type2, "FLOAT*")==0 && strcmp(type1, "INT")==0) || 
+                            (strcmp(type2, "DOUBLE*")==0 && strcmp(type1, "INT")==0) || (strcmp(type2, "CHAR*")==0 && strcmp(type1, "INT")==0)) {
+                    return type2;
+                }
             }
             else if (strcmp(operator, "&&")==0 || strcmp(operator, "||")==0) {
                 if (strcmp(type1, "BOOL")==0 && strcmp(type2, "BOOL")==0)
@@ -524,9 +547,15 @@ char* checkArithmetics(char* operator, char* type1, char* type2) {
             else if (strcmp(operator, "!")==0 && strcmp(type1, "BOOL")==0) {
                 return "BOOL";
             }
-            else if ((strcmp(operator, "&")==0) && (strcmp(type1, "INT")==0 || strcmp(type1, "DOUBLE")==0 
-                || strcmp(type1, "FLOAT")==0 || strcmp(type1, "CHAR")==0)) {
-                return "INT";
+            else if (strcmp(operator, "&")==0) {
+                if (strcmp(type1, "INT")==0) 
+                    return "INT*";
+                else if (strcmp(type1, "DOUBLE")==0) 
+                    return "DOUBLE*";
+                else if (strcmp(type1, "FLOAT")==0) 
+                    return "FLOAT*";
+                else if (strcmp(type1, "CHAR")==0) 
+                    return "CHAR*";
             }
             else if (strcmp(operator, "*")==0) {
                 if (strcmp(type1, "INT*")==0) 
@@ -664,7 +693,7 @@ char* checkSemantics(Scope* scope, node* Node) {
             exit(1);
         }
 
-        LinkedListNode* item = makeVarNode("if", NULL, NULL, NULL);
+        LinkedListNode* item = makeVarNode("if", NULL, NULL);
         addLinkedListNode(scope, item);
 
         if (strcmp(Node->right->token, "BLOCK") == 0)
@@ -675,7 +704,7 @@ char* checkSemantics(Scope* scope, node* Node) {
 
     else if (strcmp(Node->token, "ELSE") == 0) {
         // adding else block into scope
-        LinkedListNode* item = makeVarNode("else", NULL, NULL, NULL);
+        LinkedListNode* item = makeVarNode("else", NULL, NULL);
         addLinkedListNode(scope, item);
 
         if (strcmp(Node->left->left->token, "BLOCK") == 0)
@@ -686,7 +715,7 @@ char* checkSemantics(Scope* scope, node* Node) {
 
     else if (strcmp(Node->token, "DO WHILE") == 0) {
         // adding do while block into scope
-        LinkedListNode* item = makeVarNode("do", NULL, NULL, NULL);
+        LinkedListNode* item = makeVarNode("do", NULL, NULL);
         addLinkedListNode(scope, item);
 
         // check that condition is of type bool
@@ -702,7 +731,7 @@ char* checkSemantics(Scope* scope, node* Node) {
 
     else if (strcmp(Node->token, "WHILE") == 0) {
         // adding while block into scope
-        LinkedListNode* item = makeVarNode("while", NULL, NULL, NULL);
+        LinkedListNode* item = makeVarNode("while", NULL, NULL);
         addLinkedListNode(scope, item);
 
         char* conditionType = checkSemantics(scope, Node->left);
@@ -721,18 +750,21 @@ char* checkSemantics(Scope* scope, node* Node) {
 
     else if (strcmp(Node->token, "FOR") == 0) {
         // adding for block into scope
-        LinkedListNode* item = makeVarNode("for", NULL, NULL, NULL);
+        LinkedListNode* item = makeVarNode("for", NULL, NULL);
         addLinkedListNode(scope, item);
 
         // creating a scope for the for loop manualy
         Scope* forLoopScope = makeScope(scope);
 
         // checking if for loop has a variable declaration statement
-        if (strcmp("ASSIGN", Node->left->token) == 0) {
+        if (strcmp("FOR INIT", Node->left->token) == 0 || strcmp("* ID ASSIGN", Node->left->token) == 0) {
             // check the assign statement
+            
             if (strcmp(Node->left->left->token, "VAR") == 0)
+                findAndInitForLoopVars(forLoopScope, Node->left->left->right, Node->left->left->left->token);
+            else
                 checkSemantics(forLoopScope, Node->left->left);
-
+            
             // check condition type
             char* conditionType = checkSemantics(forLoopScope, Node->left->right);
             if (strcmp("BOOL", conditionType) != 0) {
@@ -769,6 +801,13 @@ char* checkSemantics(Scope* scope, node* Node) {
         checkSemantics(forLoopScope, Node->right->left->left);
     }
 
+    else if (strcmp(Node->token, "FOR INIT") == 0) {
+        if (strcmp(Node->left->token, "") != 0) // if no more recursion
+            checkSemantics(scope, Node->left);
+    
+        checkSemantics(scope, Node->left->left); // check current item semantics
+        checkSemantics(scope, Node->left->right); // recursive call
+    }
 
     else if (strcmp(Node->token, "UPDATE") == 0) {
         // if there is only one update statement without ','
@@ -805,7 +844,7 @@ char* checkSemantics(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "ID ASSIGN") == 0) {
-        LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL, NULL);
+        LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
         Variable* var = findVarNodeInScope(scope, varNode);
         if (var == NULL) {
             printf("ERROR: identifier '%s' was not found.\n", Node->left->token);
@@ -828,6 +867,15 @@ char* checkSemantics(Scope* scope, node* Node) {
                         }
                     }
                 }
+                else {
+                    if (strcmp(var->type, expectedType) != 0) {
+                        printf("ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", var->name, var->type, expectedType);
+                        free(Node);
+                        free(scope);
+                        exit(1);
+                    }
+                }
+  
                 return NULL;
             }
             else if (strcmp(Node->right->left->left->token, "* (pointer)") == 0) {
@@ -861,7 +909,6 @@ char* checkSemantics(Scope* scope, node* Node) {
                         exit(1);
                     }
                 }
-
                 return NULL;
             }
         }
@@ -875,7 +922,7 @@ char* checkSemantics(Scope* scope, node* Node) {
     }
     
     else if (strcmp(Node->token, "* ID ASSIGN") == 0) {
-        LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL, NULL);
+        LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
         Variable* var = findVarNodeInScope(scope, varNode);
         if (var == NULL) {
             printf("ERROR: identifier '%s' was not found.\n", Node->left->token);
@@ -902,7 +949,7 @@ char* checkSemantics(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "ASSIGN[]") == 0) {
-        LinkedListNode* varNode = makeVarNode(Node->left->left->token, NULL, NULL, NULL);
+        LinkedListNode* varNode = makeVarNode(Node->left->left->token, NULL, NULL);
         Variable* var = findVarNodeInScope(scope, varNode);
         if (var == NULL) {
             printf("ERROR: identifier '%s' was not found.\n", Node->left->token);
@@ -964,6 +1011,67 @@ char* checkSemantics(Scope* scope, node* Node) {
         }
     }
 
+    else if (strcmp(Node->token, "&ID[]") == 0) {
+        char* resType = checkSemantics(scope, Node->left); 
+        return "CHAR*";
+    }
+
+    else if (strcmp(Node->token, "ID[]") == 0) {
+        LinkedListNode* varNode = makeVarNode(Node->left->left->token, NULL, NULL);
+        Variable* var = findVarNodeInScope(scope, varNode);
+        if (var == NULL) {
+            printf("ERROR: identifier '%s' was not found.\n", Node->left->left->token);
+            free(var);
+            free(scope);
+            exit(1);
+        }
+
+        // check that the id is of type string
+        if (strcmp(var->type, "STRING") != 0) {
+            printf("ERROR: can't assign index value to identifier of type '%s', it is only possible for type 'STRING'.\n", var->type);
+            free(Node);
+            free(scope);
+            exit(1);
+        }
+
+        // check that expression is of type int
+        char* indexType = checkSemantics(scope, Node->left->right);
+        if (strcmp(indexType, "INT") != 0) {
+            printf("ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", var->name, indexType);
+            free(Node);
+            free(scope);
+            exit(1); 
+        }
+
+        
+        // check that string size is not an expression but a simple value to check if that index is valid
+        if ((Node->left->right->left->token != NULL) && (strcmp(Node->left->right->left->token, "VALUE") == 0) && 
+            (Node->left->right->left->right == NULL) && (Node->left->right->left->left != NULL))  { // the pointers help against segmenration faults
+            
+            // check that index expression is less than or equal to the declared length and that its not negative
+            int indexValue = atoi(Node->left->right->left->left->left->token);
+
+            if (indexValue < 0) {
+                printf("ERROR: index is out of bounds for identifier '%s', index '%d' is invalid.\n", var->name, indexValue);
+                free(Node);
+                free(scope);
+                exit(1); 
+            }
+            
+            if (var->len != NULL) {
+                int maxStringLen = atoi(var->len);
+                if (indexValue > maxStringLen) {
+                    printf("ERROR: index is out of bounds for identifier '%s', expected index <= '%d' but found index '%d'.\n", var->name, maxStringLen, indexValue);
+                    free(Node);
+                    free(scope);
+                    exit(1); 
+                }
+            }
+        }
+
+        return "CHAR";
+    }
+
 
 
     else if (strcmp(Node->token, "EXPRESSION") == 0) {
@@ -980,7 +1088,7 @@ char* checkSemantics(Scope* scope, node* Node) {
                 free(scope);
                 exit(1);
             }
-            return checkSemantics(scope, Node->left->left);
+            return type;
         }
         else if (strcmp(Node->left->token, "* (pointer)") == 0) { 
             char* type = checkSemantics(scope, Node->left->left);
@@ -992,9 +1100,6 @@ char* checkSemantics(Scope* scope, node* Node) {
             }
             return type;
         }
-        else if (strcmp(Node->left->token, "*( )") == 0) {
-            return checkSemantics(scope, Node->left->left);
-        }
         else if (strcmp(Node->left->left->token, "FUNCTION CALL") == 0) {
             return checkSemantics(scope, Node->left->left);
         }
@@ -1005,7 +1110,7 @@ char* checkSemantics(Scope* scope, node* Node) {
                 return typeIfFound;
             }
             // otherwise try to find it in a scope
-            LinkedListNode* varNode = makeVarNode(Node->left->left->left->token, NULL, NULL, NULL);
+            LinkedListNode* varNode = makeVarNode(Node->left->left->left->token, NULL, NULL);
             Variable* var = findVarNodeInScope(scope, varNode);
             if (var == NULL) {
                 printf("ERROR: identifier '%s' was not found.\n", Node->left->left->left->token);
@@ -1055,7 +1160,6 @@ char* checkSemantics(Scope* scope, node* Node) {
                 || strcmp(Node->left->token, "!=") == 0) {
 
             // check explicit division by zero
-            //! check if we need to check for division by zero
             if (strcmp(Node->left->token, "/") == 0) {
                 if (strcmp(Node->left->right->left->left->left->token, "0") == 0) {
                     printf("ERROR: division by zero detected.\n");
@@ -1066,38 +1170,16 @@ char* checkSemantics(Scope* scope, node* Node) {
 
             char* leftType = checkSemantics(scope, Node->left->left);
             char* rightType = checkSemantics(scope, Node->left->right);
-            if ((strcmp(Node->left->token, "+") == 0) || (strcmp(Node->left->token, "-") == 0) || (strcmp(Node->left->token, "*") == 0) || (strcmp(Node->left->token, "/") == 0)) {
-                if ((strcmp(leftType, "INT*") == 0) || (strcmp(leftType, "DOUBLE*") == 0) || (strcmp(leftType, "FLOAT*") == 0) || (strcmp(leftType, "CHAR*") == 0)) {
-                    leftType = "INT";
-                }
-
-                if ((strcmp(rightType, "INT*") == 0) || (strcmp(rightType, "DOUBLE*") == 0) || (strcmp(rightType, "FLOAT*") == 0) || (strcmp(rightType, "CHAR*") == 0)) {
-                    rightType = "INT";
-                }
-                
-                //!! check what to do here?
-                // printf("left: %s\n", leftType);
-                // printf("right: %s\n", rightType);
-                char* resType = checkArithmetics(Node->left->token, leftType, rightType);
-                if (resType == NULL) {
-                    printf("ERROR: type mismatch on '%s' operator.\n", Node->left->token);
-                    free(scope);
-                    exit(1);
-                }
-                return resType;
-            }
-            else {
-                char* resType = checkArithmetics(Node->left->token, leftType, rightType);
-                if (resType == NULL) {
-                    printf("ERROR: type mismatch on '%s' operator.\n", Node->left->token);
-                    free(scope);
-                    exit(1);
-                } 
-                return resType;
-            }  
+           
+            char* resType = checkArithmetics(Node->left->token, leftType, rightType);
+            if (resType == NULL) {
+                printf("ERROR: type mismatch on '%s' operator.\n", Node->left->token);
+                free(scope);
+                exit(1);
+            } 
+            return resType;
+            
         }
-
-        //todo: other types of expressions.....
     }
 
 
@@ -1113,9 +1195,6 @@ char* checkSemantics(Scope* scope, node* Node) {
         }
 
         Function* currentFunction = getCurrentFunction(scope);
-        if (currentFunction == NULL) {
-            exit(1); //! add print for error mes
-        }
 
         if (currentFunction->isStatic == 1 && func->isStatic == 0) {
             printf("ERROR: static function '%s' cannot call a non-static function '%s'\n", currentFunction->name, func->name);
@@ -1206,7 +1285,7 @@ void printLinkedList(LinkedListNode* list) {
     while (current != NULL) {
         if (current->variable != NULL) {
             Variable* var = current->variable;
-            printf("%s, %s, %s, %s\t", var->name, var->type, var->value, var->len); //len is for strings [32]
+            printf("%s, %s, %s\t", var->name, var->type, var->len); //len is for strings [32]
         }
         else {
             Function* func = current->function;
