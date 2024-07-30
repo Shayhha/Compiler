@@ -4,13 +4,13 @@ public int foo(args>> int: a,b) : static {
     var int: i;
     string mess1[20] <- "123";
     var char*: j;
+    var char*: y <- *j;
     j <- &mess1[12];
+    i <- |mess1| + |mess1|;
 
-    for (*x<-5; i<5 ; i<-5, i<-foo(5,5)) 
+    for (*x<-5; i<5 ; i<-(foo(5,2) + 60 /12 + (7) - *x + 8), i<-foo(5,5)) 
         if (true)
             return 5;
-
-
 
     return 0;
 }

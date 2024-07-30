@@ -372,7 +372,8 @@ void findAndInitStrings(Scope* scope, node* Node, char* type) {
 
         addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, type, stringMaxLen));
     }
-    addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, type, NULL));
+    else
+        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, type, NULL));
     
 
     // check if there are more declarations in this declaration
@@ -507,7 +508,10 @@ Function* getCurrentFunction(Scope* scope) {
 char* checkArithmetics(char* operator, char* type1, char* type2) {
     if (operator != NULL && type1 != NULL) {
         if (type2 != NULL) {
-            if (strcmp(operator, "+")==0 || strcmp(operator, "-")==0 || strcmp(operator, "*")==0 || strcmp(operator, "/")==0) {
+            if ((strcmp(operator, "+")==0 || strcmp(operator, "-")==0) && ((strcmp(type1, "CHAR*")==0 && strcmp(type2, "INT")==0) || (strcmp(type1, "INT")==0 && strcmp(type2, "CHAR*")==0))) {
+                return "CHAR*";
+            }
+            else if (strcmp(operator, "+")==0 || strcmp(operator, "-")==0 || strcmp(operator, "*")==0 || strcmp(operator, "/")==0) {
                 if (strcmp(type1, "INT")==0 && strcmp(type2, "INT")==0)
                     return "INT";
                 else if ((strcmp(type1, "INT")==0 && strcmp(type2, "DOUBLE")==0) || (strcmp(type1, "FLOAT")==0 && strcmp(type2, "DOUBLE")==0) || (strcmp(type1, "DOUBLE")==0 && strcmp(type2, "INT")==0)
@@ -516,14 +520,6 @@ char* checkArithmetics(char* operator, char* type1, char* type2) {
                 else if ((strcmp(type1, "INT")==0 && strcmp(type2, "FLOAT")==0) || (strcmp(type1, "FLOAT")==0 && strcmp(type2, "INT")==0)
                             || (strcmp(type1, "FLOAT")==0 && strcmp(type2, "FLOAT")==0))
                     return "FLOAT";
-                else if ((strcmp(type1, "INT*")==0 && strcmp(type2, "INT")==0) || (strcmp(type1, "FLOAT*")==0 && strcmp(type2, "INT")==0) || 
-                            (strcmp(type1, "DOUBLE*")==0 && strcmp(type2, "INT")==0) || (strcmp(type1, "CHAR*")==0 && strcmp(type2, "INT")==0)) {
-                    return type1;
-                }
-                else if ((strcmp(type2, "INT*")==0 && strcmp(type1, "INT")==0) || (strcmp(type2, "FLOAT*")==0 && strcmp(type1, "INT")==0) || 
-                            (strcmp(type2, "DOUBLE*")==0 && strcmp(type1, "INT")==0) || (strcmp(type2, "CHAR*")==0 && strcmp(type1, "INT")==0)) {
-                    return type2;
-                }
             }
             else if (strcmp(operator, "&&")==0 || strcmp(operator, "||")==0) {
                 if (strcmp(type1, "BOOL")==0 && strcmp(type2, "BOOL")==0)
@@ -1090,7 +1086,7 @@ char* checkSemantics(Scope* scope, node* Node) {
             }
             return type;
         }
-        else if (strcmp(Node->left->token, "* (pointer)") == 0) { 
+        else if (strcmp(Node->left->token, "* (pointer)") == 0) { //*x
             char* type = checkSemantics(scope, Node->left->left);
             if ((strcmp(type, "INT") == 0) || (strcmp(type, "FLOAT") == 0) || (strcmp(type, "DOUBLE") == 0) || (strcmp(type, "CHAR") == 0) || (strcmp(type, "BOOL") == 0)) {
                 printf("ERROR: using '*' on identifier of type '%s' is undefined.\n", type);
@@ -1098,7 +1094,8 @@ char* checkSemantics(Scope* scope, node* Node) {
                 free(scope);
                 exit(1);
             }
-            return type;
+
+            return checkArithmetics("*", type, NULL);
         }
         else if (strcmp(Node->left->left->token, "FUNCTION CALL") == 0) {
             return checkSemantics(scope, Node->left->left);
