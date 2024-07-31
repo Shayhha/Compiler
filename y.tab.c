@@ -1734,7 +1734,7 @@ yyreduce:
     {
   case 2: /* program: code  */
 #line 36 "Comp.yacc"
-               {(yyval.nodeval) = (yyvsp[0].nodeval); checktree((yyval.nodeval)); printtree((yyval.nodeval), 0);}
+               {(yyval.nodeval) = (yyvsp[0].nodeval); checktree((yyval.nodeval)); printtree((yyval.nodeval), 0); printf("\n# - # - # Semantics Checks Passed! # - # - #\n");}
 #line 1739 "y.tab.c"
     break;
 

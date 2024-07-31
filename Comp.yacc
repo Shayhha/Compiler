@@ -33,7 +33,7 @@
 %type<nodeval> func_statement func_statements declaration declarations statement statements return_statement assignment code functions function_call update function_params for_init_many for_init expression value for_statement function_static func_many_id func_args_decleration function_args function_type function if_statement else_statement block block_contents func_block_contents program while_statement do_while_statement var_declaration many_id param_type string_declaration many_string 
 %%
 
-program : code {$$ = $1; checktree($$); printtree($$, 0);};
+program : code {$$ = $1; checktree($$); printtree($$, 0); printf("\n# - # - # Semantics Checks Passed! # - # - #\n");};
 
 code : functions {$$ = mknode("CODE", $1, NULL);}
 
