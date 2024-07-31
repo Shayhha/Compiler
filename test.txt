@@ -5,17 +5,29 @@ public int foo(args>> int: a,b) : static {
     string mess1[20] <- "123";
     var char*: j;
     var char*: y <- *j;
+
+    public void goo() {
+        var int: i;
+    }
+    
+
     j <- &mess1[12];
     i <- |mess1| + |mess1|;
 
     for (*x<-5; i<5 ; i<-(foo(5,2) + 60 /12 + (7) - *x + 8), i<-foo(5,5)) 
-        if (true)
-            return 5;
+        if (true) {
+            var char: lol<-'5';
+            i<-5;
+            return 0;
+            i<-1;
+        }
+           
+
 
     return 0;
 }
 
 public void main() : static {
-    var bool: z;
+    var float: x;
     return ;
 }
