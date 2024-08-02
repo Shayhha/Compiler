@@ -1,33 +1,22 @@
 
-public int foo(args>> int: a,b) : static {
-    var int*: x;
-    var int: i;
-    string mess1[20] <- "123";
-    var char*: j;
-    var char*: y <- *j;
-
-    public void goo() {
-        var int: i;
-    }
+public int foo(args>> double: x) : static {
+    var int: a, b;
+    a <- 23;
     
+    if (a == 23) 
+        b <- 10;
+    else
+        b <- 19;
 
-    j <- &mess1[12];
-    i <- |mess1| + |mess1|;
-
-    for (*x<-5; i<5 ; i<-(foo(5,2) + 60 /12 + (7) - *x + 8), i<-foo(5,5)) 
-        if (true) {
-            var char: lol<-'5';
-            i<-5;
-            return 0;
-            i<-1;
-        }
-           
-
-
-    return 0;
+    return b + a;
 }
 
 public void main() : static {
-    var float: x;
-    return ;
+    var int: a, b;
+
+    a <- 0;
+    while (a < 10) {
+        b <- foo(3.14);
+        a <- a + b;
+    }
 }

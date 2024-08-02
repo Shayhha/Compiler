@@ -1,13 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-// node struct as given to us, not modified
-typedef struct node {
-    char* token;
-    struct node* left;
-    struct node* right;
-} node;
+#include "Helper.h"
 
 // mknode function as given to us, not modified
 node* mknode(char* token, node* left, node* right) {

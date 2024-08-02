@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "Helper.c"
+#include "Helper.h"
 
 /* represents an argument like int num */
 typedef struct Argument {
