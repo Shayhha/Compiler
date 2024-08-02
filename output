@@ -2,22 +2,21 @@ foo:
 		BeginFunc N
 		t0 = 23
 		a = t0
-		t1 = 23
-		t2 = a == t1
-		if t2 goto L1
+		t1 = (null) && (null)
+		if t1 goto L1
 		goto L2
-	L1:	t3 = 10
-		b = t3
+	L1:	t2 = 10
+		b = t2
 		goto L3
-	L2:	t4 = 19
-		b = t4
-	L3:	t5 = b + a
-		return t5
+	L2:	t3 = 19
+		b = t3
+	L3:	t4 = b + a
+		return t4
 		EndFunc
 
 main:
 		BeginFunc N
-		t6 = 0
-		a = t6
+		t5 = 0
+		a = t5
 		EndFunc
 

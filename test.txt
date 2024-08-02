@@ -3,7 +3,7 @@ public int foo(args>> double: x) : static {
     var int: a, b;
     a <- 23;
     
-    if (a == 23) 
+    if ((a == 23) && (b == 11 || x == 2.28)) 
         b <- 10;
     else
         b <- 19;
