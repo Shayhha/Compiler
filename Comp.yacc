@@ -21,10 +21,10 @@
 %token<strval> TRUE_VAL FALSE_VAL 
 %token<strval> HEX_VAL STRING_VAL ID CHAR_VAL INT_VAL FLOAT_VAL DOUBLE_VAL 
 
-%left OR AND
+%left AND OR
 %left EQUAL NOT_EQ LESSER GREATER LESSER_EQ GREATER_EQ  
-%left MULT DIVIDE
 %left ADD SUB
+%left MULT DIVIDE
 %left ';' ','
 %right NOT ADDRESS ASSIGN 
 %nonassoc non_else
