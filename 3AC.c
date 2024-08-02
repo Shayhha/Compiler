@@ -66,7 +66,7 @@ void push(Stack *s, const char *str) {
     newNode->data = strdup(str); // Copy the string into the new node
     newNode->next = s->top;
     s->top = newNode;
-    printf("Pushed \"%s\"\n", str);
+    //printf("Pushed \"%s\"\n", str);
 }
 
 // Function to pop a string from the stack
@@ -79,7 +79,7 @@ char* pop(Stack *s) {
     char *item = temp->data;
     s->top = s->top->next;
     free(temp);
-    printf("Poped \"%s\"\n", item);
+    //printf("Poped \"%s\"\n", item);
     return item;
 }
 
