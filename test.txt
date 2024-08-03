@@ -1,10 +1,12 @@
 
 public int foo(args>> double: x) : static {
-    var int: a, b;
+    var int: a, b <- 40;
     a <- 23;
     
-    if ((a == 23) && (b == 11 || x == 2.28)) 
-        b <- 10;
+    if (a <= 111 == true || a >= 16 && a == 6 || a != 23) {
+        var int: z <- 33;
+        b <- z;
+    } 
     else
         b <- 19;
 
