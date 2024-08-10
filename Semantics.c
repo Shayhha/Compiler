@@ -57,7 +57,7 @@ void findAndInitFuncArgs(LinkedListNode* item, node* temp);
 Function* findFuncNodeInScope(Scope* scope, LinkedListNode* node);
 Function* findFuncNodeInCurrentScope(Scope* scope, char* name);
 int findMainFunction(Scope* scope);
-Function* getCurrentFunction(Scope* scope);
+Function* getCurrentFunction(Scope* scope, Scope** currentFuncScope);
 
 char* checkArithmetics(char* operator, char* type1, char* type2);
 char* checkSemantics(Scope* scope, node* Node);
@@ -158,7 +158,9 @@ Scope* makeScope(Scope* father) {
 void findAndInitFuncArgs(LinkedListNode* item, node* temp) {
     char* tempType;
     node* variables;
-    if (strcmp(temp->left->token, "") != 0) { // if we only have one type of arguments: foo(args>> int: x, y)      
+
+    // if we only have one type of arguments: foo(args>> int: x, y)      
+    if (strcmp(temp->left->token, "") != 0) { 
         tempType = temp->left->token;
         variables = temp->right;
         do {
@@ -192,9 +194,8 @@ void findAndInitForLoopVars(Scope* scope, node* Node, char* type) {
         else if (strcmp(Node->token, "EXPRESSION") == 0) 
             id = Node->left->left->left->token; 
 
-
         // check if the variable we are declaring is used in the function argument declaration
-        Function* currentFunc = getCurrentFunction(scope);
+        Function* currentFunc = getCurrentFunction(scope, NULL);
         if (currentFunc != NULL) {
             for (size_t i = 0; i < currentFunc->countArgs; i++) {
                 if (strcmp(currentFunc->args[i]->name, id) == 0) {
@@ -248,7 +249,7 @@ void findAndInitForLoopVars(Scope* scope, node* Node, char* type) {
 // function for adding a new variable to the scope
 void findAndInitVars(Scope* scope, node* Node, char* type) {
     // check if the variable we are declaring is used in the function argument declaration
-    Function* currentFunc = getCurrentFunction(scope);
+    Function* currentFunc = getCurrentFunction(scope, NULL);
     if (currentFunc != NULL) {
         for (size_t i = 0; i < currentFunc->countArgs; i++) {
             if (strcmp(currentFunc->args[i]->name, Node->token) == 0) {
@@ -276,7 +277,7 @@ void findAndInitVars(Scope* scope, node* Node, char* type) {
     else {
         if (strcmp(Node->left->token, "ASSIGN") == 0) { 
             char* foundType = checkSemantics(scope, Node->left->left);
-            //check if given type is of type pointer and if so we need to check its value type
+            // check if given type is of type pointer and if so we need to check its value type
             if ((strcmp(type, "INT*") == 0) || (strcmp(type, "DOUBLE*") == 0) || (strcmp(type, "FLOAT*") == 0) || (strcmp(type, "CHAR*") == 0)) {
                 char* expectedType = checkArithmetics("*", type, NULL);
                 if (strcmp(foundType, "NULL") != 0) {
@@ -288,7 +289,7 @@ void findAndInitVars(Scope* scope, node* Node, char* type) {
                     }
                 }
             }
-            //else we are doing regular assignment so we only check if the value type matches the declaration type
+            // else we are doing regular assignment so we only check if the value type matches the declaration type
             else if (strcmp(type, foundType) != 0) {
                 printf("SEMANTIC ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", Node->token, type, foundType);
                 free(Node);
@@ -315,68 +316,42 @@ void findAndInitStrings(Scope* scope, node* Node, char* type) {
         exit(1); 
     }
 
-    // check if the string size is of type int
-    char* stringSizeType = checkSemantics(scope, Node->left->left->right);
-    if (strcmp(stringSizeType, "INT") != 0) {
-        printf("SEMANTIC ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", Node->left->left->left->token, stringSizeType);
-        free(Node);
-        free(scope);
-        exit(1); 
-    }
-
+    // check that index expression is less than or equal to the declared length and that its not negative
+    int indexValue = atoi(Node->left->left->right->token);
+    
     // check that string size is not explicit zero
-    if ((Node->left->left->right->left->token != NULL) && (strcmp(Node->left->left->right->left->token, "VALUE") == 0) && (Node->left->left->right->left->right == NULL) && (Node->left->left->right->left->left->left != NULL) && (atoi(Node->left->left->right->left->left->left->token)) == 0) {
+    if (indexValue == 0) {
         printf("SEMANTIC ERROR: string size of identifier '%s' can't be 0.\n", Node->left->left->left->token);
         free(Node);
         free(scope);
         exit(1); 
     }
     
-    // checking that the assignment value is of type STRING or NULL           
+    // checking that the assignment value is of type STRING or NULL          
     if (Node->left->right->left != NULL) { 
         char* assignemtType = checkSemantics(scope, Node->left->right->left->left);
+
         if ((strcmp("NULL",assignemtType) != 0) && (strcmp("STRING", assignemtType) != 0)) {
             printf("SEMANTIC ERROR: type mismatch for identifier '%s', expected 'STRING' or 'NULL' but found '%s'.\n", Node->left->left->left->token, assignemtType);
             free(Node);
             free(scope);
             exit(1);
         }
-    }
-
-    // check that string size is not an expression but a simple value to check if that index is valid
-    if ((strcmp(Node->left->left->right->left->token, "VALUE") == 0) && (strcmp(Node->left->left->right->left->left->token, "INT") == 0)) {
-        // check that index expression is less than or equal to the declared length and that its not negative
-        int indexValue = atoi(Node->left->left->right->left->left->left->token);
-        if (indexValue < 0) {
-            printf("SEMANTIC ERROR: string size is invalid for identifier '%s', size must be greater than zero.\n", Node->left->left->left->token);
-            free(Node);
-            free(scope);
-            exit(1); 
-        }
-
         // checking that the index is valid only if the value is a simple integer, if its an expression then dont check
-        char* stringMaxLen = Node->left->left->right->left->left->left->token;
-        if (Node->left->right->left) {
-            node* val = Node->left->right->left->left;
-            if (strcmp("NULL", val->left->token) != 0) {
-                if (strcmp("NULL", checkSemantics(scope, val)) != 0) { 
-                    int maxLen = atoi(stringMaxLen), assignemntStringLen = (strlen(val->left->left->left->token) - 2); // -2 is because we want to disregard the "" symbols.
-                    if (assignemntStringLen > maxLen) { //? >= because we leave space for '\0'
-                        printf("SEMANTIC ERROR: assignment string is too long for identifier '%s', expected length <= '%d' but found string of length '%d'.\n", Node->left->left->left->token, maxLen, assignemntStringLen);
-                        free(Node);
-                        free(scope);
-                        exit(1);
-                    }
-                }
+        else if (strcmp("STRING", assignemtType) == 0) { 
+            int assignemntStringLen = (strlen(Node->left->right->left->left->left->left->token) - 2); // -2 is because we want to disregard the "" symbols.
+            if (assignemntStringLen > indexValue) { //? >= because we leave space for '\0'
+                printf("SEMANTIC ERROR: assignment string is too long for identifier '%s', expected length <= '%d' but found string of length '%d'.\n", Node->left->left->left->token, indexValue, assignemntStringLen);
+                free(Node);
+                free(scope);
+                exit(1);
             }
         }
-
-        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, type, stringMaxLen));
     }
-    else
-        addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, type, NULL));
-    
 
+    // add the string variable into the scope
+    addLinkedListNode(scope, makeVarNode(Node->left->left->left->token, type, Node->left->left->right->token));
+    
     // check if there are more declarations in this declaration
     if (Node->right->left != NULL) {
         findAndInitStrings(scope, Node->right->left, type);
@@ -451,9 +426,9 @@ int findMainFunction(Scope* scope) {
         }
     }
     return 0; 
-    //*note*  When declaring a function with the name 'main' we are checking if a main function exists in the current scope
-    //*       and also that the current scope is the global scope, otherwise we return error.    
-    //*       This function is also used to insure that a 'main' function was indeed declared in the program.
+    //*note*:  When declaring a function with the name 'main' we are checking if a main function exists in the current scope
+    //*        and also that the current scope is the global scope, otherwise we return error.    
+    //*        This function is also used to insure that a 'main' function was indeed declared in the program.
 }
 
 
@@ -491,7 +466,7 @@ Function* findFuncNodeInCurrentScope(Scope* scope, char* name) {
 }
 
 /* function for getting the current function, the one we are currently in the scope of */
-Function* getCurrentFunction(Scope* scope) { 
+Function* getCurrentFunction(Scope* scope, Scope** currentFuncScope) { 
     if (scope != NULL) {
         LinkedListNode* current = scope->father->list; 
         // go through all elements in linked list node
@@ -501,8 +476,12 @@ Function* getCurrentFunction(Scope* scope) {
 
         // check if the last item is indeed a function, else keep looking in the next scope
         if (current->function == NULL) {
-            return getCurrentFunction(scope->father);
+            return getCurrentFunction(scope->father, currentFuncScope);
         }
+
+        // save the pointer to the scope where the function was found in
+        if (currentFuncScope != NULL)
+            *currentFuncScope = scope->father; 
         return current->function; 
     }
     return NULL; 
@@ -699,6 +678,7 @@ char* checkSemantics(Scope* scope, node* Node) {
             exit(1);
         }
 
+        // adding if block into scope
         LinkedListNode* item = makeVarNode("if", NULL, NULL);
         addLinkedListNode(scope, item);
 
@@ -740,6 +720,7 @@ char* checkSemantics(Scope* scope, node* Node) {
         LinkedListNode* item = makeVarNode("while", NULL, NULL);
         addLinkedListNode(scope, item);
 
+        // check the while condition
         char* conditionType = checkSemantics(scope, Node->left);
         if (strcmp("BOOL", conditionType) != 0) {
             printf("SEMANTIC ERROR: while loop statement condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
@@ -764,8 +745,8 @@ char* checkSemantics(Scope* scope, node* Node) {
 
         // checking if for loop has a variable declaration statement
         if (strcmp("FOR INIT", Node->left->token) == 0 || strcmp("* ID ASSIGN", Node->left->token) == 0) {
-            // check the assign statement
             
+            // check the assign statement
             if (strcmp(Node->left->left->token, "VAR") == 0)
                 findAndInitForLoopVars(forLoopScope, Node->left->left->right, Node->left->left->left->token);
             else
@@ -838,32 +819,51 @@ char* checkSemantics(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "VAR") == 0) { 
+        // call a helper function that will go over all the variables that where declared, recursivly, and
+        // add them to the scope one by one, also checking their types.
         findAndInitVars(scope, Node->right, Node->left->token);
     }
 
     else if (strcmp(Node->token, "STRING") == 0) {
+        // call a helper function that will go over all the strings that where declared, recursivly, and add them to the scope
         findAndInitStrings(scope, Node->left, Node->token);
     }
 
     else if (strcmp(Node->token, "ASSIGN") == 0) {
+        // recursive call to check and return the type of the assignment value
         return checkSemantics(scope, Node->left);
     }
 
     else if (strcmp(Node->token, "ID ASSIGN") == 0) {
-        // find the variable in the scopes
+        // create a temp var pointer
         LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
-        Variable* var = findVarNodeInScope(scope, varNode);
-        if (var == NULL) {
-            printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
-            free(var);
-            free(scope);
-            exit(1);
+        Variable* var = NULL;
+
+        // try to find var in a function argument
+        char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
+        if (typeIfFound != NULL) {
+            var = varNode->variable;
+            var->type = typeIfFound;
+        } 
+        else {
+            // find the variable in the scopes
+            var = findVarNodeInScope(scope, varNode);
+            if (var == NULL) {
+                printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
+                free(var);
+                free(scope);
+                exit(1);
+            }
         }
 
         // find the type of the variable and if its a pointer there is special attention to the assignmet
         char* foundType = checkSemantics(scope, Node->right);
         if ((strcmp(var->type, "INT*") == 0) || (strcmp(var->type, "DOUBLE*") == 0) || (strcmp(var->type, "FLOAT*") == 0) || (strcmp(var->type, "CHAR*") == 0)) {
-            if (strcmp(Node->right->left->left->token, "&") == 0) {
+            
+            // checking for cases such as: &y, (&y)
+            if (strcmp(Node->right->left->left->token, "&") == 0
+                || strcmp(Node->right->left->left->left->left->token, "&") == 0) { 
+
                 // check that the type of the identifier we want to get the address of matches the type of the pointer
                 char* expectedType = checkArithmetics("&", foundType, NULL);
                 if (expectedType == NULL) {
@@ -876,7 +876,7 @@ char* checkSemantics(Scope* scope, node* Node) {
                         }
                     }
                 }
-                else {
+                else { // checking for type mismatch error
                     if (strcmp(var->type, expectedType) != 0) {
                         printf("SEMANTIC ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", var->name, var->type, expectedType);
                         free(Node);
@@ -908,6 +908,7 @@ char* checkSemantics(Scope* scope, node* Node) {
         }
         else if ((strcmp(foundType, "INT*") == 0) || (strcmp(foundType, "DOUBLE*") == 0) || (strcmp(foundType, "FLOAT*") == 0) || (strcmp(foundType, "CHAR*") == 0)) {
             if (strcmp(Node->right->left->left->token, "* (pointer)") == 0) {
+                
                 // check that the type of the identifier we want to get the value of matches the type of the identifier we want to assign to
                 char* expectedType = checkArithmetics("*", foundType, NULL);
                 if ((expectedType != NULL) && (strcmp(foundType, "NULL") != 0)) {
@@ -922,6 +923,7 @@ char* checkSemantics(Scope* scope, node* Node) {
             }
         }
 
+        // checking for mismatch error in a general case when the left side operand is not a pointer
         if (strcmp(var->type, foundType) != 0) {
             printf("SEMANTIC ERROR: type mismatch for identifier '%s', expected '%s' but found '%s'.\n", Node->left->token, var->type, foundType);
             free(var);
@@ -931,15 +933,33 @@ char* checkSemantics(Scope* scope, node* Node) {
     }
     
     else if (strcmp(Node->token, "* ID ASSIGN") == 0) {
-        // find the variable in the scopes
+        // creating a temp var pointer
         LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
-        Variable* var = findVarNodeInScope(scope, varNode);
-        if (var == NULL) {
-            printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
-            free(var);
-            free(scope);
-            exit(1);
+        Variable* var = NULL;
+
+        // try to find var in a function argument
+        char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
+        if (typeIfFound != NULL) {
+            var = varNode->variable;
+            var->type = typeIfFound;
+        } 
+        else {
+            // find the variable in the scopes
+            var = findVarNodeInScope(scope, varNode);
+            if (var == NULL) {
+                printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
+                free(var);
+                free(scope);
+                exit(1);
+            }
+            else if (strcmp(var->type, "STRING") == 0) { // check if the variable is of type string
+                printf("SEMANTIC ERROR: type mismatch on identifier '*%s', cannot use '*' operator on identifiers of type 'STRING'.\n", var->name);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
         }
+        
         //check if given type is of type pointer and if so we need to check its value type
         char* foundType = checkSemantics(scope, Node->right);
         if ((strcmp(foundType, "INT*") == 0) || (strcmp(foundType, "DOUBLE*") == 0) || (strcmp(foundType, "FLOAT*") == 0) || (strcmp(foundType, "CHAR*") == 0)) {
@@ -947,6 +967,8 @@ char* checkSemantics(Scope* scope, node* Node) {
                 foundType = checkArithmetics("*", foundType, NULL);
             }
         }
+
+        // getting the expected type of '*' operator on the variable using a helper function checkArithmetics
         char* expectedType = checkArithmetics("*", var->type, NULL);
         if (expectedType != NULL) {
             if ((strcmp(foundType, "NULL") == 0) || (strcmp(expectedType, foundType) != 0)) {
@@ -986,14 +1008,12 @@ char* checkSemantics(Scope* scope, node* Node) {
             exit(1); 
         }
 
-
         // check that string size is not an expression but a simple value to check if that index is valid
         if ((Node->left->right->left->token != NULL) && (strcmp(Node->left->right->left->token, "VALUE") == 0) && 
             (Node->left->right->left->right == NULL) && (Node->left->right->left->left != NULL))  { // the pointers help against segmenration faults
             
             // check that index expression is less than or equal to the declared length and that its not negative
             int indexValue = atoi(Node->left->right->left->left->left->token);
-
             if (indexValue < 0) {
                 printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', index '%d' is invalid.\n", var->name, indexValue);
                 free(Node);
@@ -1063,7 +1083,6 @@ char* checkSemantics(Scope* scope, node* Node) {
             
             // check that index expression is less than or equal to the declared length and that its not negative
             int indexValue = atoi(Node->left->right->left->left->left->token);
-
             if (indexValue < 0) {
                 printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', index '%d' is invalid.\n", var->name, indexValue);
                 free(Node);
@@ -1081,18 +1100,17 @@ char* checkSemantics(Scope* scope, node* Node) {
                 }
             }
         }
-
         return "CHAR";
     }
 
 
-
-    else if (strcmp(Node->token, "EXPRESSION") == 0) {
+    else if (strcmp(Node->token, "EXPRESSION") == 0) { // 🛑 🛑 🛑 🛑 🛑 🛑  EXPRESSION  🛑 🛑 🛑 🛑 🛑 🛑 //
         // expressions have many options...
 
         if (strcmp(Node->left->token, "NULL") == 0) {
             return "NULL";
         }
+
         else if (strcmp(Node->left->token, "&") == 0) { 
             char* type = checkSemantics(scope, Node->left->left);
             if ((strcmp(type, "INT*") == 0) || (strcmp(type, "FLOAT*") == 0) || (strcmp(type, "DOUBLE*") == 0) || (strcmp(type, "CHAR*") == 0)) {
@@ -1103,7 +1121,9 @@ char* checkSemantics(Scope* scope, node* Node) {
             }
             return type;
         }
+
         else if (strcmp(Node->left->token, "* (pointer)") == 0) { 
+            // checking that the type under the '*' is correct
             char* type = checkSemantics(scope, Node->left->left);
             if ((strcmp(type, "INT") == 0) || (strcmp(type, "FLOAT") == 0) || (strcmp(type, "DOUBLE") == 0) || (strcmp(type, "CHAR") == 0) || (strcmp(type, "BOOL") == 0)) {
                 printf("SEMANTIC ERROR: using '*' on identifier of type '%s' is undefined.\n", type);
@@ -1111,12 +1131,14 @@ char* checkSemantics(Scope* scope, node* Node) {
                 free(scope);
                 exit(1);
             }
-
-            return checkArithmetics("*", type, NULL);
+            return checkArithmetics("*", type, NULL); // returning the correct value using a helper function
         }
+
         else if (strcmp(Node->left->left->token, "FUNCTION CALL") == 0) {
+            // recursivly calling the checkSemantics function because it already has a solution to it (outside of expressions)
             return checkSemantics(scope, Node->left->left);
         }
+
         else if (strcmp(Node->left->left->token, "ID") == 0) {
             // try to find var in a function argument
             char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->left->left->token);
@@ -1134,13 +1156,17 @@ char* checkSemantics(Scope* scope, node* Node) {
             }
             return var->type;
         }
+
         else if (strcmp(Node->left->token, "VALUE") == 0) {
             return Node->left->left->token; //* this is the type of the value from yacc
         }
+
         else if (strcmp(Node->left->token, "( )") == 0) {
             return checkSemantics(scope, Node->left->left); 
         }
+
         else if (strcmp(Node->left->token, "| |") == 0) {
+            // checking the type of the value inside the '| |' operator
             char* type = checkSemantics(scope, Node->left->left);
             char* resType = checkArithmetics("||", type, NULL);
             if (resType == NULL) {
@@ -1151,6 +1177,7 @@ char* checkSemantics(Scope* scope, node* Node) {
             return resType;
         }
         else if (strcmp(Node->left->token, "! (not)") == 0) {
+            // checking the type of the value under the '!' operator
             char* type = checkSemantics(scope, Node->left->left);
             char* resType = checkArithmetics("!", type, NULL);
             if (resType == NULL) {
@@ -1192,10 +1219,8 @@ char* checkSemantics(Scope* scope, node* Node) {
                 exit(1);
             } 
             return resType;
-            
         }
     }
-
 
 
     else if (strcmp(Node->token, "FUNCTION CALL") == 0) {
@@ -1210,14 +1235,19 @@ char* checkSemantics(Scope* scope, node* Node) {
         }
 
         // checking if we can call that function from our current function
-        Function* currentFunction = getCurrentFunction(scope);
+        Scope* scopePtr = NULL; // getting the address of the scope that holds the current function
+        Function* currentFunction = getCurrentFunction(scope, &scopePtr);
+
+        // checking that the static declerations match
         if (currentFunction->isStatic == 1 && func->isStatic == 0) {
             printf("SEMANTIC ERROR: static function '%s' cannot call a non-static function '%s'\n", currentFunction->name, func->name);
             exit(1);
         }
 
+        // checking that the private/public declerations match
         if (currentFunction->isPrivate == 0 && func->isPrivate == 1) {
-            Function* funcInCurrentScope = findFuncNodeInCurrentScope(scope->father, funcNode->function->name);    
+            // finding the function that is been called in the scope of the function from which the call is been made, thats why: 'scopePtr'
+            Function* funcInCurrentScope = findFuncNodeInCurrentScope(scopePtr, funcNode->function->name);    
             if (funcInCurrentScope == NULL) {
                 printf("SEMANTIC ERROR: public function '%s' cannot call a private function '%s' because they are not in the same scope.\n", currentFunction->name, func->name);
                 exit(1);
@@ -1230,8 +1260,9 @@ char* checkSemantics(Scope* scope, node* Node) {
             int paramCounter = 0;
 
             do {
+                // checking if the number of arduments is correct
                 if (paramCounter == func->countArgs) {
-                    printf("SEMANTIC ERROR: to many arguments in function call '%s()'\n", funcNode->function->name);
+                    printf("SEMANTIC ERROR: too many arguments in function call '%s()'\n", funcNode->function->name);
                     free(funcNode);
                     free(scope);
                     exit(1); 
@@ -1251,6 +1282,7 @@ char* checkSemantics(Scope* scope, node* Node) {
                 temp = temp->right;
             } while (temp != NULL);
 
+            // checking if the number of arduments is correct
             if (paramCounter < func->countArgs) {
                 printf("SEMANTIC ERROR: too few arguments in function call '%s()'\n", funcNode->function->name);
                 free(funcNode);
@@ -1258,13 +1290,12 @@ char* checkSemantics(Scope* scope, node* Node) {
                 exit(1); 
             }
         }
-
         return func->returnType;
     }
 
     else if (strcmp(Node->token, "RETURN") == 0) {
         // finding the current function that we are in
-        Function* currentFunction = getCurrentFunction(scope);
+        Function* currentFunction = getCurrentFunction(scope, NULL);
         if (currentFunction == NULL) {
             printf("SEMANTIC ERROR: could not find function signiture for in current scope.\n");
             free(scope);
@@ -1280,6 +1311,7 @@ char* checkSemantics(Scope* scope, node* Node) {
             }
         }
         else {
+            // if there is an expression after the return then check that the type of the expression matches the return type of the current function
             char* type = checkSemantics(scope, Node->left);
             if (strcmp(type, currentFunction->returnType) != 0) {
                 printf("SEMANTIC ERROR: return type mismatch in function '%s', expected '%s' but found '%s'.\n", currentFunction->name, currentFunction->returnType, type);

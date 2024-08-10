@@ -188,36 +188,36 @@ declaration : var_declaration {$$ = $1;}
 
 string_declaration  : STRING many_string ';' {$$ = mknode("STRING", $2, NULL);}        
                         
-many_string : ID '[' expression ']' assignment ',' many_string 
+many_string : ID '[' INT_VAL ']' assignment ',' many_string 
                 {$$ = mknode("", 
                                 mknode("", 
                                         mknode("", 
                                                 mknode($1, NULL, NULL), 
-                                                mknode("EXPRESSION", $3, NULL)),
+                                                mknode($3, NULL, NULL)),
                                         mknode("", $5, NULL)), 
                                 mknode("", $7, NULL));}
-            | ID '[' expression ']' assignment 
+            | ID '[' INT_VAL ']' assignment 
                 {$$ = mknode("", 
                                 mknode("", 
                                         mknode("", 
                                                 mknode($1, NULL, NULL), 
-                                                mknode("EXPRESSION", $3, NULL)),
+                                                mknode($3, NULL, NULL)),
                                         mknode("", $5, NULL)), 
                                 mknode("", NULL, NULL));}
-            | ID '[' expression ']' ',' many_string
+            | ID '[' INT_VAL ']' ',' many_string
                 {$$ = mknode("", 
                                 mknode("", 
                                         mknode("", 
                                                 mknode($1, NULL, NULL), 
-                                                mknode("EXPRESSION", $3, NULL)),
+                                                mknode($3, NULL, NULL)),
                                         mknode("", NULL, NULL)), 
                                 mknode("", $6, NULL));}
-            | ID '[' expression ']'
+            | ID '[' INT_VAL ']'
                 {$$ = mknode("", 
                                 mknode("", 
                                         mknode("", 
                                                 mknode($1, NULL, NULL), 
-                                                mknode("EXPRESSION", $3, NULL)),
+                                                mknode($3, NULL, NULL)),
                                         mknode("", NULL, NULL)), 
                                 mknode("", NULL, NULL));}
              
