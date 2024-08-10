@@ -1,23 +1,25 @@
 
 public int foo(args>> double: x) : static {
-    var int: a, b <- 40;
+    string message[3123];
+    var int: a, b;
+    var double: c;
     a <- 23;
-    
-    if (a <= 111 == true || a >= 16 && a == 6 || a != 23) {
-        var int: z <- 33;
-        b <- z;
-    } 
-    else
-        b <- 19;
 
-    return b + a;
+    if (a == 23)
+        b <- 10;
+    else 
+        return 453;
+
+    c <-4+5.6;
+    return 4;
+
 }
 
 public void main() : static {
     var int: a, b;
 
     a <- 0;
-    while (a < 10) {
+    while(a < 10) {
         b <- foo(3.14);
         a <- a + b;
     }

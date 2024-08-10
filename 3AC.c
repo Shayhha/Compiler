@@ -32,7 +32,8 @@ void printStack(Stack* s);
 
 FILE* openFile();
 void closeFile();
-int addLineToFile(const char* line);
+long addLineToFile(const char *line);
+void replaceNInFile(long posN, long posEnd);
 
 void assignVars(Stack* stack, node* Node);
 char* getNextVar();
@@ -46,8 +47,7 @@ FILE* file;
 const char* filename = "output";
 static int t = 0; // Number of temporary variable
 static int l = 1; // Number of label
-static int line = 0; // Number of lines in output file //? not sure if we need it
-static int conditionFlag = 0; // Flag for knowing when to print labels when creating temp variables in 'EXPRESSION' -> 'VALUE'
+static int funcSize = 0; // Variable for counting the size of a function
 
 //* # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # *//
 
@@ -158,17 +158,40 @@ void closeFile() {
     }
 }
 
-// Function to add a line to the file
-int addLineToFile(const char *line) {
+// Function to add a line to the file and get the position of the line in the file
+long addLineToFile(const char *line) {
+    long position;
     if (file == NULL) {
         fprintf(stderr, "File is not open.\n");
         return -1; // Indicate failure
     }
+
+    position = ftell(file); // Save the current file position
     if (fprintf(file, "%s\n", line) < 0) {
         perror("Failed to write to file");
         return -1; // Indicate failure
     }
-    return 0; // Indicate success
+    return position; // Return the position where 'N' was written
+}
+
+// Function to replace 'N' with the actual function size
+void replaceNInFile(long posN, long posEnd) {
+    if (file == NULL) {
+        fprintf(stderr, "File is not open.\n");
+        return;
+    }
+    
+    fseek(file, posN, SEEK_SET); // Move to the saved position of N
+
+    // Replace 'N' with funcSize
+    if (fprintf(file, "\t\tBeginFunc %d", funcSize) < 0) { 
+        perror("Failed to write to file");
+    }
+
+    fseek(file, posEnd, SEEK_SET); // jump to the position of the last line in the file
+    funcSize = 0; // reset counter for next functions
+
+    fflush(file); // Ensure the changes are written to the file
 }
 
 //* # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # *//
@@ -270,6 +293,43 @@ void assignStrnigs(Stack* stack, node* Node) {
     }
 }
 
+// Function for performing assignment to new variables in for loop declerations
+void assignForVars(Stack* stack, node* Node) {
+    // check if there are more variables to declare in this declaration statement
+    if (strcmp(Node->token, "") == 0) {
+        assignForVars(stack, Node->left);
+        assignForVars(stack, Node->right->left);
+    }
+    else { 
+        if (strcmp(Node->token, "ID ASSIGN") == 0) { 
+            // Handle assignment
+            make3AC(stack, Node);
+        }
+    }
+}
+
+int incrementFunctionSize(char* type) {
+    if (strcmp(type, "INT") == 0) {
+        funcSize += 4;
+    }
+    else if (strcmp(type, "FLOAT") == 0) {
+        funcSize += 8;
+    }
+    else if (strcmp(type, "DOUBLE") == 0) {
+        funcSize += 8;
+    }
+    else if (strcmp(type, "CHAR") == 0) {
+        funcSize += 1;
+    }
+    else if (strcmp(type, "STRING") == 0) {
+        funcSize += 4; //? assuming its a pointer and pointers are sizeof 4 byte
+    }
+    else if (strcmp(type, "BOOL") == 0) {
+        funcSize += 1; //? assuming its 1 or 0 then only sizeof 1 byte
+    }
+}
+
+
 // Function for checking if we should print a label or not
 char* checkLabel(Stack* stack) {
     // Check if the first item in the stack starts with letter 'L', like 'L4', 'L12'
@@ -316,14 +376,27 @@ void make3AC(Stack* stack, node* Node) {
     else if (strcmp(Node->token, "FUNCTION") == 0) {
         // Print function name label and begin line
         addLineToFile(concat(Node->left->token, ":"));
-        addLineToFile("\t\tBeginFunc N");
-        //todo: calculate N and find a way to update the file
+
+        // Write "BeginFunc N" and save the position of this line
+        long posN = addLineToFile("\t\tBeginFunc N\n");
+        if (posN == -1) {
+            fclose(file);
+            exit(1);
+        }
 
         // Handle function body
         make3AC(stack, Node->right->right->left);
         
-        // Print end of function
+        // Print end of function and save the position of this line
         addLineToFile("\t\tEndFunc\n");
+        long posEnd = addLineToFile(""); // adding a spacer line and saving the position of this line
+        if (posEnd == -1) {
+            fclose(file);
+            exit(1);
+        }
+        
+        // Update the N to be the actual function size
+        replaceNInFile(posN, posEnd);
     }
 
     else if (strcmp(Node->token, "BLOCK") == 0) { 
@@ -342,58 +415,169 @@ void make3AC(Stack* stack, node* Node) {
     }
 
     else if (strcmp(Node->token, "IF") == 0) {
-        // Create if start and end labels
-        char* labelIf = getNextLabel(); 
-        char* labelEnd = getNextLabel(); 
+        int ifAndElseFlag = 0;
+        if (Node->right != NULL) 
+            ifAndElseFlag = 1;
 
-        // Save if start and end labels
-        push(stack, labelEnd); 
-        push(stack, labelIf); 
+        char* labelIf = getNextLabel(); 
+        char* labelEnd = getNextLabel();
+        char* line;
 
         // Handle condition
-        conditionFlag = 0;
+        push(stack, labelEnd);
+        if (strcmp(Node->left->left->left->token, "||") == 0 || strcmp(Node->left->left->left->token, "&&") == 0)
+            push(stack, labelIf);
+ 
         make3AC(stack, Node->left->left); 
 
+        if (strcmp(Node->left->left->left->token, "||") == 0 || strcmp(Node->left->left->left->token, "&&") == 0)
+            pop(stack);
+
         // Handle if block
-        conditionFlag = 1;
-        make3AC(stack, Node->right);
+        asprintf(&line, "\t%s:", labelIf);
+        addLineToFile(line);
+        make3AC(stack, Node->left->right);
+
+        if (ifAndElseFlag == 1) {
+            char* labelElseStart = labelEnd; 
+            char* labelIfEnd = getNextLabel(); 
+          
+            asprintf(&line, "\t\tgoto %s", labelIfEnd);
+            addLineToFile(line);
+
+            // Handle else block (also handles print else label)
+            asprintf(&line, "\t%s:", labelElseStart);
+            addLineToFile(line);
+            push(stack, labelIfEnd);
+
+            make3AC(stack, Node->right->left->left);
+
+            asprintf(&line, "\t%s:", labelIfEnd);
+            addLineToFile(line);
+        }
+        else {
+            asprintf(&line, "\t%s:", labelEnd);
+            addLineToFile(line);
+        }
     }
 
-    else if (strcmp(Node->token, "ELSE") == 0) {
-        // Create end of if label
-        char* labelIfEnd = getNextLabel(); 
-
-        // Print goto end of if label
-        char* ifEndLine;
-        asprintf(&ifEndLine, "\t\tgoto %s", labelIfEnd);
-        addLineToFile(ifEndLine);
-        free(ifEndLine);
-
-        // Handle else block (also handles print else label)
-        make3AC(stack, Node->left);
-        
-        // Push end of if label
-        push(stack, labelIfEnd);
-    }
 
     else if (strcmp(Node->token, "DO WHILE") == 0) {
+        char* doStartLabel = getNextLabel();
+        char* doEndLabel = getNextLabel();  
+        char* line;
+
+        asprintf(&line, "\t%s:", doStartLabel);
+        addLineToFile(line);
+        push(stack, doEndLabel);
+
+        // Handle do while block
+        make3AC(stack, Node->left);
         
+        // Handle condition
+        make3AC(stack, Node->right); 
+        
+        asprintf(&line, "\t\tgoto %s", doStartLabel);
+        addLineToFile(line);
+
+        asprintf(&line, "\t%s:", doEndLabel);
+        addLineToFile(line);
     }
 
     else if (strcmp(Node->token, "WHILE") == 0) {
-       
+        char* whileStartLabel = getNextLabel();
+        char* whileEndLabel = getNextLabel();  
+        char* line;
+
+        asprintf(&line, "\t%s:", whileStartLabel);
+        addLineToFile(line);
+        push(stack, whileEndLabel);
+        
+        // Handle condition
+        make3AC(stack, Node->right);
+
+        // Handle while block
+        make3AC(stack, Node->left); 
+        
+        asprintf(&line, "\t\tgoto %s", whileStartLabel);
+        addLineToFile(line);
+
+        asprintf(&line, "\t%s:", whileEndLabel);
+        addLineToFile(line);
     }
 
     else if (strcmp(Node->token, "FOR") == 0) {
-       
+        char* forStartLabel = getNextLabel();
+        char* forEndLabel = getNextLabel();  
+        char* line;
+
+        push(stack, forEndLabel);
+
+        // Handle for init, checking if for loop has a variable declaration statement
+        if (strcmp("FOR INIT", Node->left->token) == 0 || strcmp("* ID ASSIGN", Node->left->token) == 0) {
+            
+            // Handle for var declerations
+            if (strcmp(Node->left->left->token, "VAR") == 0)
+                assignForVars(stack, Node->left->left->right);
+            else
+                make3AC(stack, Node->left->left);
+
+            asprintf(&line, "\t%s:", forStartLabel);
+            addLineToFile(line);
+            
+            // Handle for condition
+            make3AC(stack, Node->left->right);
+
+            // Handle for block
+            make3AC(stack, Node->right->left->left); 
+
+            // Handle for update
+            if (Node->left->right->right != NULL) {
+                make3AC(stack, Node->left->right->right);
+            }
+        }
+        else { // if there is no var declaration statement then the expression and update pointers are different
+
+            asprintf(&line, "\t%s:", forStartLabel);
+            addLineToFile(line);
+
+            // Handle for condition
+            make3AC(stack, Node->left);
+
+            // Handle for block
+            make3AC(stack, Node->right->left->left); 
+
+            // check if there is an update statement
+            if (Node->left->right != NULL) {
+                make3AC(stack, Node->left->right);
+            }
+        }
+
+        asprintf(&line, "\t\tgoto %s", forStartLabel);
+        addLineToFile(line);
+
+        asprintf(&line, "\t%s:", forEndLabel);
+        addLineToFile(line);
     }
 
     else if (strcmp(Node->token, "FOR INIT") == 0) {
-       
+        if (strcmp(Node->left->token, "") != 0) // if no more recursion
+            make3AC(stack, Node->left);
+    
+        make3AC(stack, Node->left->left); // check current item semantics
+        make3AC(stack, Node->left->right); // recursive call
     }
 
     else if (strcmp(Node->token, "UPDATE") == 0) {
-       
+        // if there is only one update statement without ','
+        if (strcmp(Node->left->token, "EXPRESSION") == 0 
+            || strcmp(Node->left->token, "ID ASSIGN") == 0) {
+            make3AC(stack, Node->left);
+        }
+        else { // if there are multiple update statements seperated by ','
+            make3AC(stack, Node->left->left); // check the current update statement
+            make3AC(stack, Node->left->right); // recursive call to the next update statement
+        }
     }
 
 
@@ -425,30 +609,33 @@ void make3AC(Stack* stack, node* Node) {
         // Pop the result of the recursive call on the right side of the assignment, save the left side token
         char* rightVal = pop(stack);
         char* leftVal = Node->left->token;
-        char *temp;
+        char* temp;
 
         // Print the assignment 
-        push(stack, leftVal);
         asprintf(&temp, "\t\t%s = %s", leftVal, rightVal);
         addLineToFile(temp);
+
+        // Count the assignment as well
+        incrementFunctionSize(Node->right->left->left->left->token);
+
         free(rightVal);
         free(temp);
     }
     
     else if (strcmp(Node->token, "* ID ASSIGN") == 0) {
-       
+
     }
 
     else if (strcmp(Node->token, "ASSIGN[]") == 0) {
-       
+
     }
 
     else if (strcmp(Node->token, "&ID[]") == 0) {
-       
+     
     }
 
     else if (strcmp(Node->token, "ID[]") == 0) {
-        
+      
     }
 
 
@@ -456,16 +643,16 @@ void make3AC(Stack* stack, node* Node) {
         // expressions have many options...
 
         if (strcmp(Node->left->token, "NULL") == 0) {
-            
+
         }
         else if (strcmp(Node->left->token, "&") == 0) { 
-            
+
         }
         else if (strcmp(Node->left->token, "* (pointer)") == 0) { 
-           
+
         }
         else if (strcmp(Node->left->left->token, "FUNCTION CALL") == 0) {
-            
+         
         }
         else if (strcmp(Node->left->left->token, "ID") == 0) {
             // Push the id value to the stack to be used later
@@ -477,24 +664,13 @@ void make3AC(Stack* stack, node* Node) {
             char *temp; 
             char* value = Node->left->left->left->token;
 
-            if (conditionFlag == 1) {
-                char* labelVal = checkLabel(stack);
-
-                if (labelVal != NULL) { // If there is a label to print, print it
-                    asprintf(&temp, "\t%s:\t%s = %s", labelVal, nextVarTemp, value);
-                }
-                else { // otherwise print 't = {value}' without a label
-                    asprintf(&temp, "\t\t%s = %s", nextVarTemp, value);
-                }
-                addLineToFile(temp);
-            }
-            else {
-                asprintf(&temp, "\t\t%s = %s", nextVarTemp, value);
-                addLineToFile(temp);
-            }
+            asprintf(&temp, "\t\t%s = %s", nextVarTemp, value);
+            addLineToFile(temp);
 
             // Push the new temp var to the stack to be used later
-            push(stack, nextVarTemp); 
+            push(stack, nextVarTemp);
+
+            incrementFunctionSize(Node->left->left->token);
         }
         else if (strcmp(Node->left->token, "( )") == 0) {
             make3AC(stack, Node->left->left);
@@ -505,62 +681,6 @@ void make3AC(Stack* stack, node* Node) {
         else if (strcmp(Node->left->token, "! (not)") == 0) {
             
         }
-        else if (strcmp(Node->left->token, "&&") == 0) {
-            // Get the labels from the stack and push it back into the stack 
-            char* ifLabel = checkLabel(stack);
-            char* elseLabel = checkLabel(stack);
-            push(stack, elseLabel);
-            push(stack, ifLabel);
-            
-            char* opVal = Node->left->token;
-            char* computeLine;
-
-            // Handle both sides of the operator, first the left and then the right side
-            make3AC(stack, Node->left->left);
-            // We only want to print goto if the top of the stack is not a label
-            if ((peek(stack) != NULL) && (peek(stack)[0] != 'L')) {
-                char* leftVal = pop(stack);
-                asprintf(&computeLine, "\t\tif %s == 0 goto %s", leftVal, elseLabel);
-                addLineToFile(computeLine);
-            }
-            
-            // Right side
-            make3AC(stack, Node->left->right);
-            // We only want to print goto if the top of the stack is not a label
-            if ((peek(stack) != NULL) && (peek(stack)[0] != 'L')) {
-                char* rightVal = pop(stack);
-                asprintf(&computeLine, "\t\tif %s == 0 goto %s", rightVal, elseLabel);
-                addLineToFile(computeLine);
-            }
-        }
-        else if (strcmp(Node->left->token, "||") == 0) {
-            // Get the labels from the stack and push it back into the stack 
-            char* ifLabel = checkLabel(stack);
-            char* elseLabel = checkLabel(stack);
-            push(stack, elseLabel);
-            push(stack, ifLabel);
-            
-            char* opVal = Node->left->token;
-            char* computeLine;
-
-            // Handle both sides of the operator, first the left and then the right side
-            make3AC(stack, Node->left->left);
-            // We only want to print goto if the top of the stack is not a label
-            if ((peek(stack) != NULL) && (peek(stack)[0] != 'L')) {
-                char* leftVal = pop(stack);
-                asprintf(&computeLine, "\t\tif %s goto %s", leftVal, ifLabel);
-                addLineToFile(computeLine);
-            }
-            
-            // Right side
-            make3AC(stack, Node->left->right);
-            // We only want to print goto if the top of the stack is not a label
-            if ((peek(stack) != NULL) && (peek(stack)[0] != 'L')) {
-                char* rightVal = pop(stack);
-                asprintf(&computeLine, "\t\tif %s == 0 goto %s", rightVal, elseLabel);
-                addLineToFile(computeLine);
-            }
-        }
         else if (strcmp(Node->left->token, "+") == 0
                 || strcmp(Node->left->token, "-") == 0
                 || strcmp(Node->left->token, "*") == 0
@@ -570,6 +690,15 @@ void make3AC(Stack* stack, node* Node) {
             make3AC(stack, Node->left->left);
             make3AC(stack, Node->left->right);
 
+
+            // printf("test: %s\n", Node->left->left->left->left->token);
+            // printf("test: %s\n", Node->left->right->left->left->token); exit(0);
+            // incrementFunctionSize(the value type);
+            // incrementFunctionSize(the value type);
+            //! problem, if the items are IDs then we cant know their types. 
+            //? solution: hold two arrays where the first is all the params (t1, t2, x, y, ...) and the second is their size (4, 4, 8, 1, ...)
+            //? then we will be able to search for the id in the first array, and get its size from the second array.
+
             // Pop right and then left sides of the operator from the stack and get the operator from AST
             char* rightVal = pop(stack);
             char* leftVal = pop(stack);
@@ -579,14 +708,8 @@ void make3AC(Stack* stack, node* Node) {
             char* tempVar = getNextVar();
             char* computeLine;
 
-            // Check if we need to print a label
-            char* labelVal = checkLabel(stack);
-
-            // Print the operation with of without the label, depends of if there is a label to print
-            if (labelVal != NULL)
-                asprintf(&computeLine, "\t%s:\t%s = %s %s %s", labelVal, tempVar, leftVal, opVal, rightVal);
-            else 
-                asprintf(&computeLine, "\t\t%s = %s %s %s", tempVar, leftVal, opVal, rightVal);
+            // Print the condition: t0 = a + b
+            asprintf(&computeLine, "\t\t%s = %s %s %s", tempVar, leftVal, opVal, rightVal);
  
             // Push the temp var to the stack to be used later
             addLineToFile(computeLine);
@@ -594,16 +717,12 @@ void make3AC(Stack* stack, node* Node) {
             free(computeLine);
             free(rightVal);
             free(leftVal);
-            free(labelVal);  
         }
         else if (strcmp(Node->left->token, "<") == 0
-                || strcmp(Node->left->token, "<=") == 0
                 || strcmp(Node->left->token, ">") == 0
-                || strcmp(Node->left->token, ">=") == 0
-                || strcmp(Node->left->token, "==") == 0
-                || strcmp(Node->left->token, "!=") == 0) {
-            
-            // Handle both sides of the operator, first the left and then the right side
+                || strcmp(Node->left->token, "==") == 0 ) {
+                    
+            // Handle the left and right side of the condition token
             make3AC(stack, Node->left->left);
             make3AC(stack, Node->left->right);
 
@@ -616,9 +735,22 @@ void make3AC(Stack* stack, node* Node) {
             char* tempVar = getNextVar();
             char* computeLine;
 
-            // Print the operation
+            // Print the condition: t0 = a < b
             asprintf(&computeLine, "\t\t%s = %s %s %s", tempVar, leftVal, opVal, rightVal);
             addLineToFile(computeLine);
+            funcSize += 1; // counting the t that holds the condition result 
+
+            char* elseLabel = peek(stack);
+            if (elseLabel != NULL) {
+                if ((strcmp(elseLabel, "&&") != 0) && (strcmp(elseLabel, "||") != 0)) {
+                    asprintf(&computeLine, "\t\tif %s == 0 goto %s", tempVar, elseLabel);
+                    addLineToFile(computeLine);
+                    push(stack, elseLabel);
+                }
+                else {
+                    pop(stack);
+                }
+            } 
 
             // Push the temp var to the stack to be used later
             push(stack, tempVar);
@@ -626,10 +758,136 @@ void make3AC(Stack* stack, node* Node) {
             free(rightVal);
             free(leftVal);  
         }
+        else if ( strcmp(Node->left->token, "<=") == 0
+                || strcmp(Node->left->token, ">=") == 0 
+                || strcmp(Node->left->token, "!=") == 0 ) {
+
+
+
+
+        }
+        else if (strcmp(Node->left->token, "&&") == 0) {
+            // Get the labels from the stack and push it back into the stack 
+            //char* ifLabel = checkLabel(stack);
+            // char* elseLabel = checkLabel(stack);
+            // push(stack, elseLabel);
+            //push(stack, ifLabel);
+            
+            char* opVal = Node->left->token;
+            char* computeLine;
+
+            push(stack, "&&");
+            // Handle both sides of the operator, first the left and then the right side
+            make3AC(stack, Node->left->left);
+            if (strcmp(peek(stack), "&&") != 0) {
+                char* leftVal = pop(stack);
+
+                pop(stack);
+                char* label1 = pop(stack);
+                push(stack, label1);
+                asprintf(&computeLine, "\t\tif %s == 0 goto %s", leftVal, label1);
+                addLineToFile(computeLine);
+            }
+            else {
+                pop(stack);
+            }
+            // We only want to print goto if the top of the stack is not a label
+            // if ((peek(stack) != NULL) && (peek(stack)[0] != 'L')) {
+            //     char* leftVal = pop(stack);
+            //     asprintf(&computeLine, "\t\tif %s == 0 goto %s", leftVal, elseLabel);
+            //     addLineToFile(computeLine);
+            // }
+            
+            // Right side
+            push(stack, "&&");
+            make3AC(stack, Node->left->right);
+            if (strcmp(peek(stack), "&&") != 0) {
+                char* rightVal = pop(stack);
+
+                pop(stack);
+                char* label2 = pop(stack);
+                push(stack, label2);
+                asprintf(&computeLine, "\t\tif %s == 0 goto %s", rightVal, label2);
+                addLineToFile(computeLine);
+            }
+            else {
+                pop(stack);
+            }
+            // We only want to print goto if the top of the stack is not a label
+            // if ((peek(stack) != NULL) && (peek(stack)[0] != 'L')) {
+            //     char* rightVal = pop(stack);
+            //     asprintf(&computeLine, "\t\tif %s == 0 goto %s", rightVal, elseLabel);
+            //     addLineToFile(computeLine);
+            // }
+        }
+        else if (strcmp(Node->left->token, "||") == 0) {
+            // Get the labels from the stack and push it back into the stack 
+            // char* ifLabel = checkLabel(stack);
+            // char* elseLabel = checkLabel(stack);
+            // push(stack, elseLabel);
+            // push(stack, ifLabel);
+            
+            char* opVal = Node->left->token;
+            char* computeLine;
+
+            // Handle both sides of the operator, first the left and then the right side
+            push(stack, "||");
+            make3AC(stack, Node->left->left);
+            if (strcmp(peek(stack), "||") != 0) {
+                printf("inside || => ");
+                printStack(stack);
+                char* leftVal = pop(stack);
+
+                if (strcmp(peek(stack), "||") == 0) {
+                    pop(stack);
+                }
+                char* label1 = pop(stack);
+                push(stack, label1);
+                asprintf(&computeLine, "\t\tif %s goto %s", leftVal, label1);
+                addLineToFile(computeLine);
+            }
+            // else {
+            //     pop(stack);
+            // }
+            
+            // We only want to print goto if the top of the stack is not a label
+            // if ((peek(stack) != NULL) && (peek(stack)[0] != 'L')) {
+            //     char* leftVal = pop(stack);
+            //     asprintf(&computeLine, "\t\tif %s goto %s", leftVal, ifLabel);
+            //     addLineToFile(computeLine);
+            // }
+            
+            // Right side
+            push(stack, "||");
+            make3AC(stack, Node->left->right);
+            if (strcmp(peek(stack), "||") != 0) {
+                char* rightVal = pop(stack);
+
+                if (strcmp(peek(stack), "||") == 0) {
+                    pop(stack);
+                }
+                printf("right side test1\n");
+                char* label2 = pop(stack);
+                printf("right side test2\n");
+                push(stack, label2);
+                printf("right side test3\n");
+                asprintf(&computeLine, "\t\tif %s == 0 goto %s", rightVal, label2);
+                addLineToFile(computeLine);
+            }
+            // else {
+            //     pop(stack);
+            // }
+            // We only want to print goto if the top of the stack is not a label
+            // if ((peek(stack) != NULL) && (peek(stack)[0] != 'L')) {
+            //     char* rightVal = pop(stack);
+            //     asprintf(&computeLine, "\t\tif %s == 0 goto %s", rightVal, elseLabel);
+            //     addLineToFile(computeLine);
+            // }
+        }
     }
 
     else if (strcmp(Node->token, "FUNCTION CALL") == 0) {
-       
+
     }
 
     else if (strcmp(Node->token, "RETURN") == 0) {
@@ -637,6 +895,12 @@ void make3AC(Stack* stack, node* Node) {
 
         // Check if the return has an expression and is not just 'return ;'
         if (Node->left != NULL) {
+            char* label = checkLabel(stack);
+            if (label != NULL) {
+                asprintf(&returnLine, "\t%s:", label);
+                addLineToFile(returnLine);
+            }
+
             // Handle the return expression
             make3AC(stack, Node->left);
 

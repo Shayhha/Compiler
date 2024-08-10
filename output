@@ -1,36 +1,44 @@
 foo:
-		BeginFunc N
-		t0 = 40
-		b = t0
+		BeginFunc 3180
+		t0 = 23
+		a = t0
 		t1 = 23
-		a = t1
-		t2 = 111
-		t3 = a <= t2
-		t4 = TRUE
-		t5 = t3 == t4
-		if t5 goto L1
-		t6 = 16
-		t7 = a >= t6
-		if t7 == 0 goto L2
-		t8 = 6
-		t9 = a == t8
-		if t9 goto L1
-		t10 = 23
-		t11 = a != t10
-		if t11 == 0 goto L2
-	L1:	t12 = 33
-		z = t12
-		b = z
+		t2 = a == t1
+		if t2 == 0 goto L2
+	L1:
+		t3 = 10
+		b = t3
 		goto L3
-	L2:	t13 = 19
-		b = t13
-	L3:	t14 = b + a
-		return t14
+	L2:
+		t4 = 453
+		return t4
+	L3:
+		t5 = 4
+		t6 = 5.6
+		t7 = t5 + t6
+		c = t7
+		t8 = 4
+		return t8
 		EndFunc
 
 main:
-		BeginFunc N
-		t15 = 0
-		a = t15
+		BeginFunc 33	
+
+		t9 = 0
+		a = t9
+	L4:
+		t10 = 10
+		t11 = a < t10
+		if t11 == 0 goto L5
+		t12 = 3.14
+		PushParam t12
+		t13 = LCall foo
+		PopParam 8
+		b = t13
+		t14 = a + b
+		a = t14
+		goto L4
+	L5:
 		EndFunc
+
 
