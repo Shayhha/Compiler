@@ -241,10 +241,10 @@ int incrementFunctionSize(char* type) {
         value += 1;
     }
     else if (strcmp(type, "BOOL") == 0) { 
-        value += 1; 
+        value += 4; //? Churkin saied it's 4 bytes
     }
     else if (strcmp(type, "INT*") == 0 || strcmp(type, "FLOAT*") == 0 || strcmp(type, "DOUBLE*") == 0 || strcmp(type, "CHAR*") == 0) {
-        value += 8; //? assuming pointers do take 8 bytes reguardless of the type of the pointer //// check this :/
+        value += 4; //? Churkin saied it's 4 bytes
     }
     funcSize += value;
     return value;
@@ -1963,7 +1963,8 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             // print the condition: t0 = a < b
             asprintf(&computeLine, "\t\t%s = %s %s %s", tempVar, leftVal, opVal, rightVal);
             addLineToFile(computeLine);
-            funcSize += 1; // counting the t that holds the condition result 
+            incrementFunctionSize(resType); // counting the t that holds the condition result 
+            //funcSize += 4; // counting the t that holds the condition result //! check what shay prefers 
 
             // check if there is '!', if so then create a new tempVar that will hold the '!condition'
             if (notFlag == 1) {
@@ -2224,12 +2225,13 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             }
 
             // print the PopParams based on the amount of argument the function received
+            int totalArgsValue = 0;
             for (int i = 0; i < paramCounter; i++) {
-                int argValue = incrementFunctionSize(func->args[i]->type);
-                funcSize -= argValue; //* since the increment function automaticali updates the funcSize, we want to use its if-else statement but not increment
-                asprintf(&line, "\t\tPopParam %d", argValue);
-                addLineToFile(line);
+                totalArgsValue = totalArgsValue + incrementFunctionSize(func->args[i]->type);
             }
+            funcSize -= totalArgsValue; //* since the increment function automaticali updates the funcSize, we want to use its if-else statement but not increment
+            asprintf(&line, "\t\tPopParam %d", totalArgsValue);
+            addLineToFile(line);
         }
         else { // if there are NO aguments to the function
             

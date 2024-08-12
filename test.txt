@@ -1,6 +1,6 @@
 
-public int foo(args>> double: x) : static {
-    string message[3123];
+public int foo(args>> double: x,y) : static {
+    string message[30];
     var int: a, b;
     var double: c;
     a <- 23;
@@ -20,7 +20,7 @@ public void main() : static {
 
     a <- 0;
     while(a < 10) {
-        b <- foo(3.14);
+        b <- foo(3.14,45.4);
         a <- a + b;
     }
 }

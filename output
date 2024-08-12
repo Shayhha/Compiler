@@ -1,5 +1,6 @@
 foo:
-		BeginFunc 3180
+		BeginFunc 90	
+
 		t0 = 23
 		a = t0
 		t1 = 23
@@ -22,7 +23,7 @@ foo:
 		EndFunc
 
 main:
-		BeginFunc 33	
+		BeginFunc 44	
 
 		t9 = 0
 		a = t9
@@ -31,12 +32,14 @@ main:
 		t11 = a < t10
 		if t11 == 0 goto L5
 		t12 = 3.14
+		t13 = 45.4
+		PushParam t13
 		PushParam t12
-		t13 = LCall foo
-		PopParam 8
-		b = t13
-		t14 = a + b
-		a = t14
+		t14 = LCall foo
+		PopParam 16
+		b = t14
+		t15 = a + b
+		a = t15
 		goto L4
 	L5:
 		EndFunc
