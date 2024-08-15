@@ -247,17 +247,23 @@ void findAndInitForLoopVars(Scope* scope, node* Node, char* type) {
 }
 
 // function for adding a new variable to the scope
-void findAndInitVars(Scope* scope, node* Node, char* type) {
-    // check if the variable we are declaring is used in the function argument declaration
-    Function* currentFunc = getCurrentFunction(scope, NULL);
-    if (currentFunc != NULL) {
-        for (size_t i = 0; i < currentFunc->countArgs; i++) {
-            if (strcmp(currentFunc->args[i]->name, Node->token) == 0) {
-                printf("SEMANTIC ERROR: redeclaration of identifier '%s', it has already been declared in current function arguments.\n", Node->token);
-                free(Node);
-                free(currentFunc);
-                free(scope);
-                exit(1); 
+void findAndInitVars(Scope* scope, node* Node, char* type) { 
+    LinkedListNode* prevScopeList = scope->father->list;
+    while (prevScopeList->next != NULL) {     
+        prevScopeList = prevScopeList->next; 
+    }
+
+    if (prevScopeList->function != NULL) {
+        Function* currentFunc = prevScopeList->function;
+        // look for arg in the function arguments
+        if (currentFunc != NULL) {
+            for (size_t i = 0; i < currentFunc->countArgs; i++) {
+                if (strcmp(currentFunc->args[i]->name, Node->token) == 0) {
+                    printf("SEMANTIC ERROR: redeclaration of identifier '%s', it has already been declared in this scope.\n", Node->token);
+                    free(Node);
+                    free(scope);
+                    exit(1); 
+                }
             }
         }
     }
@@ -449,6 +455,21 @@ Function* findFuncNodeInScope(Scope* scope, LinkedListNode* node) {
     return NULL; 
 }
 
+Function* findFuncNodeUntillGivenScope(Scope* scope, Scope* finalScope, char* name) {
+    // look for function in all scopes untill the final scope that was provieded
+    Scope* temp1 = scope;
+    while ((temp1 != NULL) && (temp1->list != NULL) && (finalScope != temp1)) {
+        LinkedListNode* temp2 = temp1->list;
+        while (temp2 != NULL) {
+            if ((temp2->function != NULL) && (strcmp(temp2->function->name, name) == 0)) {
+                return temp2->function;
+            }
+            temp2 = temp2->next;
+        }
+        temp1 = temp1->father;
+    }
+    return NULL;
+}
 
 /* function to find function in a given scope only, not recursive */
 Function* findFuncNodeInCurrentScope(Scope* scope, char* name) {
@@ -665,6 +686,10 @@ char* checkSemantics(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "BLOCK") == 0) { 
+        // adding if block into scope
+        LinkedListNode* item = makeVarNode("block", NULL, NULL);
+        addLinkedListNode(scope, item);
+
         checkSemantics(makeScope(scope), Node->left); 
     }
 
@@ -835,27 +860,26 @@ char* checkSemantics(Scope* scope, node* Node) {
     }
 
     else if (strcmp(Node->token, "ID ASSIGN") == 0) {
-        // create a temp var pointer
-        LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
+        char* typeIfFound = NULL;
         Variable* var = NULL;
+        LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
 
-        // try to find var in a function argument
-        char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
-        if (typeIfFound != NULL) {
-            var = varNode->variable;
-            var->type = typeIfFound;
-        } 
-        else {
-            // find the variable in the scopes
+        if (typeIfFound == NULL) { // find var in current scope and then in func args
             var = findVarNodeInScope(scope, varNode);
             if (var == NULL) {
-                printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
-                free(var);
-                free(scope);
-                exit(1);
+                typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
+                if (typeIfFound != NULL) {
+                    var = varNode->variable;
+                    var->type = typeIfFound;
+                }
+                else {
+                    printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
+                    free(var);
+                    free(scope);
+                    exit(1);
+                }
             }
         }
-
         // find the type of the variable and if its a pointer there is special attention to the assignmet
         char* foundType = checkSemantics(scope, Node->right);
         if ((strcmp(var->type, "INT*") == 0) || (strcmp(var->type, "DOUBLE*") == 0) || (strcmp(var->type, "FLOAT*") == 0) || (strcmp(var->type, "CHAR*") == 0)) {
@@ -884,7 +908,6 @@ char* checkSemantics(Scope* scope, node* Node) {
                         exit(1);
                     }
                 }
-  
                 return NULL;
             }
             else if (strcmp(Node->right->left->left->token, "* (pointer)") == 0) {
@@ -933,31 +956,28 @@ char* checkSemantics(Scope* scope, node* Node) {
     }
     
     else if (strcmp(Node->token, "* ID ASSIGN") == 0) {
-        // creating a temp var pointer
+        // find var in current scope and then in func args
+        char* typeIfFound;
         LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
-        Variable* var = NULL;
-
-        // try to find var in a function argument
-        char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
-        if (typeIfFound != NULL) {
-            var = varNode->variable;
-            var->type = typeIfFound;
-        } 
-        else {
-            // find the variable in the scopes
-            var = findVarNodeInScope(scope, varNode);
-            if (var == NULL) {
+        Variable* var = findVarNodeInScope(scope, varNode);
+        if (var == NULL) {
+            typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
+            if (typeIfFound != NULL) {
+                var = varNode->variable;
+                var->type = typeIfFound;
+            }
+            else {
                 printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
                 free(var);
                 free(scope);
                 exit(1);
             }
-            else if (strcmp(var->type, "STRING") == 0) { // check if the variable is of type string
-                printf("SEMANTIC ERROR: type mismatch on identifier '*%s', cannot use '*' operator on identifiers of type 'STRING'.\n", var->name);
-                free(Node);
-                free(scope);
-                exit(1);
-            }
+        }
+        else if (strcmp(var->type, "STRING") == 0) { // check if the variable is of type string
+            printf("SEMANTIC ERROR: type mismatch on identifier '*%s', cannot use '*' operator on identifiers of type 'STRING'.\n", var->name);
+            free(Node);
+            free(scope);
+            exit(1);
         }
         
         //check if given type is of type pointer and if so we need to check its value type
@@ -1048,61 +1068,6 @@ char* checkSemantics(Scope* scope, node* Node) {
         return "CHAR*";
     }
 
-    else if (strcmp(Node->token, "ID[]") == 0) {
-        // find the variable in the scopes
-        LinkedListNode* varNode = makeVarNode(Node->left->left->token, NULL, NULL);
-        Variable* var = findVarNodeInScope(scope, varNode);
-        if (var == NULL) {
-            printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->left->token);
-            free(var);
-            free(scope);
-            exit(1);
-        }
-
-        // check that the id is of type string
-        if (strcmp(var->type, "STRING") != 0) {
-            printf("SEMANTIC ERROR: can't assign index value to identifier of type '%s', it is only possible for type 'STRING'.\n", var->type);
-            free(Node);
-            free(scope);
-            exit(1);
-        }
-
-        // check that expression is of type int
-        char* indexType = checkSemantics(scope, Node->left->right);
-        if (strcmp(indexType, "INT") != 0) {
-            printf("SEMANTIC ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", var->name, indexType);
-            free(Node);
-            free(scope);
-            exit(1); 
-        }
-
-        
-        // check that string size is not an expression but a simple value to check if that index is valid
-        if ((Node->left->right->left->token != NULL) && (strcmp(Node->left->right->left->token, "VALUE") == 0) && 
-            (Node->left->right->left->right == NULL) && (Node->left->right->left->left != NULL))  { // the pointers help against segmenration faults
-            
-            // check that index expression is less than or equal to the declared length and that its not negative
-            int indexValue = atoi(Node->left->right->left->left->left->token);
-            if (indexValue < 0) {
-                printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', index '%d' is invalid.\n", var->name, indexValue);
-                free(Node);
-                free(scope);
-                exit(1); 
-            }
-            
-            if (var->len != NULL) {
-                int maxStringLen = atoi(var->len);
-                if (indexValue > maxStringLen) {
-                    printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', expected index <= '%d' but found index '%d'.\n", var->name, maxStringLen, indexValue);
-                    free(Node);
-                    free(scope);
-                    exit(1); 
-                }
-            }
-        }
-        return "CHAR";
-    }
-
 
     else if (strcmp(Node->token, "EXPRESSION") == 0) { // 🛑 🛑 🛑 🛑 🛑 🛑  EXPRESSION  🛑 🛑 🛑 🛑 🛑 🛑 //
         // expressions have many options...
@@ -1139,13 +1104,8 @@ char* checkSemantics(Scope* scope, node* Node) {
             return checkSemantics(scope, Node->left->left);
         }
 
-        else if (strcmp(Node->left->left->token, "ID") == 0) {
-            // try to find var in a function argument
-            char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->left->left->token);
-            if (typeIfFound != NULL) {
-                return typeIfFound;
-            }
-            // otherwise try to find it in a scope
+        else if (strcmp(Node->left->token, "ID[]") == 0) {
+            // find the variable in the scopes
             LinkedListNode* varNode = makeVarNode(Node->left->left->left->token, NULL, NULL);
             Variable* var = findVarNodeInScope(scope, varNode);
             if (var == NULL) {
@@ -1154,8 +1114,49 @@ char* checkSemantics(Scope* scope, node* Node) {
                 free(scope);
                 exit(1);
             }
+
+            // check that the id is of type string
+            if (strcmp(var->type, "STRING") != 0) {
+                printf("SEMANTIC ERROR: can't assign index value to identifier of type '%s', it is only possible for type 'STRING'.\n", var->type);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+
+            // check that expression is of type int
+            char* indexType = checkSemantics(scope, Node->left->left->right);
+            if (strcmp(indexType, "INT") != 0) {
+                printf("SEMANTIC ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", var->name, indexType);
+                free(Node);
+                free(scope);
+                exit(1); 
+            }
+            
+            return "CHAR"; 
+        }
+
+        else if (strcmp(Node->left->left->token, "ID") == 0) {
+            // try to find var in a function argument
+            char* typeIfFound;
+            LinkedListNode* varNode = makeVarNode(Node->left->left->left->token, NULL, NULL);
+            Variable* var = findVarNodeInScope(scope, varNode);
+            if (var == NULL) {
+                typeIfFound = findVarInFuncArgs(scope->father, Node->left->left->left->token);
+                if (typeIfFound != NULL) {
+                    var = varNode->variable;
+                    var->type = typeIfFound;
+                }
+                else {
+                    printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->left->left->token);
+                    free(var);
+                    free(scope);
+                    exit(1);
+                }
+            }
             return var->type;
         }
+
+        
 
         else if (strcmp(Node->left->token, "VALUE") == 0) {
             return Node->left->left->token; //* this is the type of the value from yacc
@@ -1247,11 +1248,18 @@ char* checkSemantics(Scope* scope, node* Node) {
         // checking that the private/public declerations match
         if (currentFunction->isPrivate == 0 && func->isPrivate == 1) {
             // finding the function that is been called in the scope of the function from which the call is been made, thats why: 'scopePtr'
-            Function* funcInCurrentScope = findFuncNodeInCurrentScope(scopePtr, funcNode->function->name);    
+            Function* funcInCurrentScope = findFuncNodeUntillGivenScope(scope, scopePtr, funcNode->function->name);    
             if (funcInCurrentScope == NULL) {
                 printf("SEMANTIC ERROR: public function '%s' cannot call a private function '%s' because they are not in the same scope.\n", currentFunction->name, func->name);
                 exit(1);
             } 
+        }
+
+        if ((func->countArgs != 0) && (Node->right == NULL)) {
+            printf("SEMANTIC ERROR: function '%s' expects '%d' arguments, but no arguments were given.\n", funcNode->function->name, func->countArgs);
+            free(funcNode);
+            free(scope);
+            exit(1); 
         }
 
         // checking if the function needs to get any params

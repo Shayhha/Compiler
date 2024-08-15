@@ -32,8 +32,8 @@
 
 %type<nodeval> func_statement func_statements declaration declarations statement statements return_statement assignment code functions function_call update function_params for_init_many for_init expression value for_statement function_static func_many_id func_args_decleration function_args function_type function if_statement else_statement block block_contents func_block_contents program while_statement do_while_statement var_declaration many_id param_type string_declaration many_string 
 %%
-
-program : code {$$ = $1; checktree($$); printtree($$, 0); printf("\n# - # - # Semantics Checks Passed! # - # - #\n");};
+                                        //  printtree($$, 0);
+program : code {$$ = $1; checktree($$); printf("\n# - # - # Semantics Checks Passed! # - # - #\n");};
 
 code : functions {$$ = mknode("CODE", $1, NULL);}
 
@@ -232,8 +232,6 @@ many_id : ID assignment ',' many_id {$$ = mknode($1, $2, $4);}
 
 assignment : ASSIGN expression {$$ = mknode("ASSIGN",mknode("EXPRESSION", $2, NULL),NULL);} 
         | ASSIGN ADDRESS ID '[' expression ']' {$$ = mknode("&ID[]", mknode("ID[]", mknode("ID", mknode($3, NULL, NULL), mknode("EXPRESSION", $5, NULL)), NULL), NULL);}
-        | ASSIGN ID '[' expression ']' {$$ = mknode("ID[]", mknode("ID", mknode($2, NULL, NULL), mknode("EXPRESSION", $4, NULL)), NULL);}
-
 
 
 param_type : INT {$$ = mknode($1,NULL,NULL);} 
@@ -267,9 +265,10 @@ expression : NULL_VALUE {$$ = mknode($1, NULL, NULL);}
             | ADDRESS '(' ID ')' {$$ = mknode("&", mknode("EXPRESSION", mknode("VALUE", mknode("ID", mknode($3, NULL, NULL), NULL), NULL), NULL), NULL);}
             | '(' expression ')' {$$ = mknode("( )", mknode("EXPRESSION", $2, NULL), NULL);}
             | '|' ID '|' {$$ = mknode("| |", mknode("EXPRESSION", mknode("VALUE", mknode("ID", mknode($2, NULL, NULL), NULL), NULL), NULL), NULL);}
+            | ID '[' expression ']' {$$ = mknode("ID[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), NULL);}
             | value {$$ = mknode("VALUE", $1, NULL);}
             | function_call {$$ = mknode("", $1, NULL);} 
-         
+            
            
 value : INT_VAL {$$ = mknode("INT", mknode($1, NULL, NULL), NULL);}
         | FLOAT_VAL {$$ = mknode("FLOAT", mknode($1, NULL, NULL), NULL);}

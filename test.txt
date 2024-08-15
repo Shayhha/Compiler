@@ -1,33 +1,104 @@
+/* comment
+Long */
+public bool foo1(args>> int: a, b, c; char: c1) : static {
+    var bool: res;
+    {
+        var char: x,b;
+        var int: y;
+        b<- '&';
+        /*1 a<- x; */ /* Type mismatch: int<-char */
+        /*2 b<- 8; */ /* Type mismatch: char<-int_literal */
+        a<- (y*7)/a-y;
+        /*3 a<- (y*7)/b-y; */ /* Type mismatch: int/char */
+        /*4 a<- (y*7)/a-c1; */ /* Type mismatch: int-char */
+        /*5 res<- (b==c) && (y>a); */ /* Type mismatch: char==int */
+        /*6 res<- (b==c1) && (y+a); */ /* Type mismatch: bool&&int */
+        /*7 3+6<- 9; */ /* Semantic: int_literal<-int */
+        /*8 %x<- 6 ;*/ /* Syntactic: %id */
+    }
+    return res;
+}
 
-public int foo(args>> int: a,b) : static {
-    var int*: x;
-    var int: i;
-    string mess1[20] <- "123";
-    var char*: j;
-    var char*: y <- *j;
+public void fee1(args>> int: i, j, k, x) : static {
+    private bool fee2 (args>> int: l, m, n) : static {
+        var bool: x, j;
+        /*var bool: n;*/ /* Redeclaration int n -> bool n */
+        var char: k;
+        k<- '@';
+        i<- l + l;
+        /*11 i<- j+1; */ /* Type mismatch: bool+int_literal */
+        /*12 i<- k+1; */ /* Type mismatch: char+int_literal */
+        
+        if((k=='*') || (x!=false) && ( l+m < i)) {
+            x<- l<m;
+        }
+        return x;
+    }
 
-    public void goo() {
-        var int: i;
+    {
+        var char: x;
+        var bool: k;
+        k<- fee2(5,i,j);
+        /*13 x<- fee2(5,i,j); */ /* Type mismatch: char<-bool */
+        /*14 k <- fee2(5,i); /* Semantic: num params */
+        /*15 k <- fee2(5,x,j); */ /* Semantic: type params */
+    }
+
+    /*16 n<- false; */ /* Semantic: unknown n*/
+    /*17 x<- '#'; */ /* Type mismatch: int<-char */
+    x<- k;
+}
+
+
+public int square(args>> int: t) : static /* function declaration */
+{
+    var int: temp;
+    temp<- t*t;
+    return temp;
+}
+
+public int foo3(args>> int: i, j, k) : static {
+    var int: total; /* variable declaration */
+    var bool: bo;
+
+    bo<- foo1(i, j, k, '^');
+    /*18 j<- foo2(); */ /* Semantic: unknown foo2 */
+    {
+        var int: temp123123;
+        if (temp123123 < 83) {
+            while (temp123123 == 3) {
+                var int: temp123123;
+                total<- square(1); /* statemets */
+            }
+        }
+        total<- square(i+j+k); /* statemets */
     }
     
+    return total;
+}
 
-    j <- &mess1[12];
-    i <- |mess1| + |mess1|;
-
-    for (*x<-5; i<5 ; i<-(foo(5,2) + 60 /12 + (7) - *x + 8), i<-foo(5,5)) 
-        if (true) {
-            var char: lol<-'5';
-            i<-5;
-            return 0;
-            i<-1;
+public int foo2() : static {
+    string s1 [100];
+    string s2 [100];
+    var int: i, j, cnt;
+    var char: tttt;
+    i<- 0;
+    j<- 0;
+    cnt<- 1;
+    while(i < |s1|) {
+        while(j < |s2| / 2) {
+            if(tttt == s1[i]) {
+                cnt<- cnt*2;
+                tttt <- s1[tttt];
+            }
+            j<- j+1;
         }
-           
-
-
-    return 0;
+        i<- i+1;
+    }
+    return cnt;
 }
 
 public void main() : static {
-    var float: x;
-    return ;
+    var int: zzz;
+    zzz <- foo2();
 }
