@@ -532,7 +532,6 @@ void findAndInitForLoopVars(Scope* scope, Stack* stack, node* Node, char* type) 
             else { // otherwise print 't = {value}' without a label
                 asprintf(&temp, "\t\t%s = %s", leftVal, rightVal);
             }
-            push(stack, leftVal);
             addLineToFile(temp);
 
             // Count the assignment ONLY if we havn't counted that variable before 
@@ -547,16 +546,22 @@ void findAndInitForLoopVars(Scope* scope, Stack* stack, node* Node, char* type) 
 
 // function for adding a new variable to the scope
 void findAndInitVars(Scope* scope, Stack* stack, node* Node, char* type) {
-    // check if the variable we are declaring is used in the function argument declaration
-    Function* currentFunc = getCurrentFunction(scope, NULL);
-    if (currentFunc != NULL) {
-        for (size_t i = 0; i < currentFunc->countArgs; i++) {
-            if (strcmp(currentFunc->args[i]->name, Node->token) == 0) {
-                printf("SEMANTIC ERROR: redeclaration of identifier '%s', it has already been declared in current function arguments.\n", Node->token);
-                free(Node);
-                free(currentFunc);
-                free(scope);
-                exit(1); 
+    LinkedListNode* prevScopeList = scope->father->list;
+    while (prevScopeList->next != NULL) {     
+        prevScopeList = prevScopeList->next; 
+    }
+
+    if (prevScopeList->function != NULL) {
+        Function* currentFunc = prevScopeList->function;
+        // look for arg in the function arguments
+        if (currentFunc != NULL) {
+            for (size_t i = 0; i < currentFunc->countArgs; i++) {
+                if (strcmp(currentFunc->args[i]->name, Node->token) == 0) {
+                    printf("SEMANTIC ERROR: redeclaration of identifier '%s', it has already been declared in this scope.\n", Node->token);
+                    free(Node);
+                    free(scope);
+                    exit(1); 
+                }
             }
         }
     }
@@ -576,6 +581,33 @@ void findAndInitVars(Scope* scope, Stack* stack, node* Node, char* type) {
     else {
         if (strcmp(Node->left->token, "ASSIGN") == 0) { 
             LinkedListNode* varNode = makeVarNode(Node->token, type, NULL);
+
+            // checking for assignment of complex bool statemenets into variables
+            if (strcmp(varNode->variable->type, "BOOL") == 0) {
+
+            //! checking if the assignment value is complex or not
+            if ((strcmp(Node->left->left->left->token, "&&") == 0) 
+                || (strcmp(Node->left->left->left->token, "||") == 0)
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "||") == 0))
+
+                ) {     
+                    // sending two labels into the recursive call as well as the var->name to know that we have an assignment
+                    char* trueLabel = getNextLabel();
+                    char* falseLabel = getNextLabel();
+                    push(stack, varNode->variable->name); 
+                    push(stack, trueLabel); 
+                    push(stack, falseLabel); 
+                }
+            }
 
             char* foundType = checkSemantics(scope, stack, Node->left->left);
             // check if given type is of type pointer and if so we need to check its value type
@@ -616,7 +648,6 @@ void findAndInitVars(Scope* scope, Stack* stack, node* Node, char* type) {
             else { // otherwise print 't = {value}' without a label
                 asprintf(&temp, "\t\t%s = %s", leftVal, rightVal);
             }
-            push(stack, leftVal);
             addLineToFile(temp);
 
             // Count the assignment ONLY if we havn't counted that variable before 
@@ -815,6 +846,21 @@ Function* findFuncNodeInScope(Scope* scope, LinkedListNode* node) {
     return NULL; 
 }
 
+Function* findFuncNodeUntillGivenScope(Scope* scope, Scope* finalScope, char* name) {
+    // look for function in all scopes untill the final scope that was provieded
+    Scope* temp1 = scope;
+    while ((temp1 != NULL) && (temp1->list != NULL) && (finalScope != temp1)) {
+        LinkedListNode* temp2 = temp1->list;
+        while (temp2 != NULL) {
+            if ((temp2->function != NULL) && (strcmp(temp2->function->name, name) == 0)) {
+                return temp2->function;
+            }
+            temp2 = temp2->next;
+        }
+        temp1 = temp1->father;
+    }
+    return NULL;
+}
 
 // function to find function in a given scope only, not recursive 
 Function* findFuncNodeInCurrentScope(Scope* scope, char* name) {
@@ -1061,10 +1107,14 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
     }
 
     else if (strcmp(Node->token, "BLOCK") == 0) { 
+        // adding if block into scope
+        LinkedListNode* item = makeVarNode("block", NULL, NULL);
+        addLinkedListNode(scope, item);
+
         checkSemantics(makeScope(scope), stack, Node->left); 
 
         //todo: Part 3 
-        // pop all elements from stack untill you reach a label //? double check if we need this
+        // pop all elements from stack untill you reach a label 
         char* popVal;
         do {
             popVal = peek(stack);
@@ -1081,27 +1131,56 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
         char* labelEnd = getNextLabel();
         char* line;
 
-        //! not sure if these 3 lines are correct
-        push(stack, labelEnd);
-        if (strcmp(Node->left->left->left->token, "||") == 0 || strcmp(Node->left->left->left->token, "&&") == 0)
+        //! check if the condition is complex or simple, and handle both cases accordingly   
+        if ((strcmp(Node->left->left->left->token, "||") == 0 )
+            || (strcmp(Node->left->left->left->token, "&&") == 0)
+            || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->token, "||") == 0)) 
+            ) {
+
+            // push both labels into the stack to be used later
+            push(stack, labelEnd);
             push(stack, labelIf);
 
-        // check that condition is of type bool
-        char* conditionType = checkSemantics(scope, stack, Node->left->left);
-        if (strcmp("BOOL", conditionType) != 0) {
-            printf("SEMANTIC ERROR: if statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
-            free(Node);
-            free(scope);
-            exit(1);
+            // check that condition is of type bool using a recursive call
+            char* conditionType = checkSemantics(scope, stack, Node->left->left);
+            if (strcmp("BOOL", conditionType) != 0) {
+                printf("SEMANTIC ERROR: if statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
         }
+        else {
+            // check that condition is of type bool using a recursive call
+            char* conditionType = checkSemantics(scope, stack, Node->left->left);
+            if (strcmp("BOOL", conditionType) != 0) {
+                printf("SEMANTIC ERROR: if statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
 
-        //! not sure if these 2 lines are correct
-        if (strcmp(Node->left->left->left->token, "||") == 0 || strcmp(Node->left->left->left->token, "&&") == 0)
-            pop(stack);
-
+            // finish the 3AC condition print by printing the 'ifz' line 
+            asprintf(&line, "\t\tif %s == 0 goto %s", pop(stack), labelEnd);
+            addLineToFile(line);
+        }
+        
+        // insert a new linked list node into the scope, at the end, in order to be able to find the correct current function later on
         LinkedListNode* item = makeVarNode("if", NULL, NULL);
         addLinkedListNode(scope, item);
 
+        // print the label to indicate the start of the IF statement
         asprintf(&line, "\t%s:", labelIf);
         addLineToFile(line);
 
@@ -1145,13 +1224,12 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
 
     else if (strcmp(Node->token, "DO WHILE") == 0) {
         //todo: Part 3
-        char* doStartLabel = getNextLabel();
-        char* doEndLabel = getNextLabel();  
+        char* startLabel = getNextLabel();
+        char* endLabel = getNextLabel();   
         char* line;
 
-        asprintf(&line, "\t%s:", doStartLabel);
+        asprintf(&line, "\t%s:", startLabel);
         addLineToFile(line);
-        push(stack, doEndLabel);
 
         // adding do while block into scope
         LinkedListNode* item = makeVarNode("do", NULL, NULL);
@@ -1160,61 +1238,137 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
         // handle do while block
         checkSemantics(scope, stack, Node->left); 
 
-        // check that condition is of type bool
-        char* conditionType = checkSemantics(scope, stack, Node->right);
-        if (strcmp("BOOL", conditionType) != 0) {
-            printf("SEMANTIC ERROR: do-while loop statement condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
-            free(Node);
-            free(scope);
-            exit(1);
+        //! check if the condition is complex or simple, and handle both cases accordingly   
+        if ((strcmp(Node->right->left->token, "||") == 0 )
+            || (strcmp(Node->right->left->token, "&&") == 0)
+            || ((strcmp(Node->right->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->right->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->right->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->right->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->right->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->right->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->right->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->right->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->right->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->right->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->right->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->right->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->token, "||") == 0)) 
+            ) {
+
+            // push both labels into the stack to be used later
+            push(stack, endLabel);
+            push(stack, startLabel);
+
+            // check that condition is of type bool using a recursive call
+            char* conditionType = checkSemantics(scope, stack,  Node->right);
+            if (strcmp("BOOL", conditionType) != 0) {
+                printf("SEMANTIC ERROR: do while statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+        }
+        else {
+            // check that condition is of type bool using a recursive call
+            char* conditionType = checkSemantics(scope, stack,  Node->right);
+            if (strcmp("BOOL", conditionType) != 0) {
+                printf("SEMANTIC ERROR: do while statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+
+            // finish the 3AC condition print by printing the 'ifz' line 
+            asprintf(&line, "\t\tif %s == 0 goto %s", pop(stack), endLabel);
+            addLineToFile(line);
         }
 
-        asprintf(&line, "\t\tgoto %s", doStartLabel);
+        asprintf(&line, "\t\tgoto %s", startLabel);
         addLineToFile(line);
 
-        asprintf(&line, "\t%s:", doEndLabel);
+        asprintf(&line, "\t%s:", endLabel);
         addLineToFile(line);
     }
 
     else if (strcmp(Node->token, "WHILE") == 0) {
         //todo: Part 3
-        char* whileStartLabel = getNextLabel();
-        char* whileEndLabel = getNextLabel();  
+        char* startLabel = getNextLabel();
+        char* blockLabel = getNextLabel();
+        char* endLabel = getNextLabel();  
         char* line;
 
-        asprintf(&line, "\t%s:", whileStartLabel);
+        asprintf(&line, "\t%s:", startLabel);
         addLineToFile(line);
-        push(stack, whileEndLabel);
+        
+        //! check if the condition is complex or simple, and handle both cases accordingly
+        if ((strcmp(Node->left->left->token, "||") == 0 )
+            || (strcmp(Node->left->left->token, "&&") == 0)
+            || ((strcmp(Node->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "||") == 0))
+            || ((strcmp(Node->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->token, "&&") == 0))
+            || ((strcmp(Node->left->left->token, "! (not)") == 0) && (strcmp(Node->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->left->token, "||") == 0)) 
+            ) {
+
+            // push both labels into the stack to be used later
+            push(stack, endLabel);
+            push(stack, blockLabel);
+
+            // check that condition is of type bool using a recursive call
+            char* conditionType = checkSemantics(scope, stack, Node->left);
+            if (strcmp("BOOL", conditionType) != 0) {
+                printf("SEMANTIC ERROR: while statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+        }
+        else {
+            // check that condition is of type bool using a recursive call
+            char* conditionType = checkSemantics(scope, stack, Node->left);
+            if (strcmp("BOOL", conditionType) != 0) {
+                printf("SEMANTIC ERROR: while statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+
+            // finish the 3AC condition print by printing the 'ifz' line 
+            asprintf(&line, "\t\tif %s == 0 goto %s", pop(stack), endLabel);
+            addLineToFile(line);
+        }
 
         // adding while block into scope
         LinkedListNode* item = makeVarNode("while", NULL, NULL);
         addLinkedListNode(scope, item);
 
-        // check the while condition
-        char* conditionType = checkSemantics(scope, stack, Node->left);
-        if (strcmp("BOOL", conditionType) != 0) {
-            printf("SEMANTIC ERROR: while loop statement condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
-            free(Node);
-            free(scope);
-            exit(1);
-        }
+        asprintf(&line, "\t%s:", blockLabel);
+        addLineToFile(line);
 
         if (strcmp(Node->right->token, "BLOCK") == 0)
             checkSemantics(scope, stack, Node->right); // while - multi line block 
         else
             checkSemantics(makeScope(scope), stack, Node->right); // while - single line statement
 
-        asprintf(&line, "\t\tgoto %s", whileStartLabel);
+        asprintf(&line, "\t\tgoto %s", startLabel);
         addLineToFile(line);
 
-        asprintf(&line, "\t%s:", whileEndLabel);
+        asprintf(&line, "\t%s:", endLabel);
         addLineToFile(line);
     }
 
     else if (strcmp(Node->token, "FOR") == 0) {
         //todo: Part 3
-        char* forStartLabel = getNextLabel();
-        char* forEndLabel = getNextLabel();  
+        char* startLabel = getNextLabel();
+        char* blockLabel = getNextLabel();
+        char* endLabel = getNextLabel(); 
         char* line;
 
         // adding for block into scope
@@ -1233,20 +1387,57 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             else
                 checkSemantics(forLoopScope, stack, Node->left->left);
 
-            asprintf(&line, "\t%s:", forStartLabel);
+            asprintf(&line, "\t%s:", startLabel);
             addLineToFile(line);
-
-            push(stack, forEndLabel);
             
-            // check condition type
-            char* conditionType = checkSemantics(forLoopScope, stack, Node->left->right);
-            if (strcmp("BOOL", conditionType) != 0) {
-                printf("SEMANTIC ERROR: for loop condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
-                free(Node);
-                free(forLoopScope);
-                free(scope);
-                exit(1);
+            
+            //! check if the condition is complex or simple, and handle both cases accordingly   
+            if ((strcmp(Node->left->right->left->token, "||") == 0 )
+                || (strcmp(Node->left->right->left->token, "&&") == 0)
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->right->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "||") == 0)) 
+                ) {
+
+                // push both labels into the stack to be used later
+                push(stack, endLabel);
+                push(stack, blockLabel);
+
+                // check that condition is of type bool using a recursive call
+                char* conditionType = checkSemantics(forLoopScope, stack, Node->left->right);
+                if (strcmp("BOOL", conditionType) != 0) {
+                    printf("SEMANTIC ERROR: for statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                    free(Node);
+                    free(forLoopScope);
+                    exit(1);
+                }
             }
+            else {
+                // check that condition is of type bool using a recursive call
+                char* conditionType = checkSemantics(forLoopScope, stack, Node->left->right);
+                if (strcmp("BOOL", conditionType) != 0) {
+                    printf("SEMANTIC ERROR: for statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                    free(Node);
+                    free(forLoopScope);
+                    exit(1);
+                }
+
+                // finish the 3AC condition print by printing the 'ifz' line 
+                asprintf(&line, "\t\tif %s == 0 goto %s", pop(stack), endLabel);
+                addLineToFile(line);
+            }
+
+            asprintf(&line, "\t%s:", blockLabel);
+            addLineToFile(line);
 
             // handle for block
             checkSemantics(forLoopScope, stack, Node->right->left->left); 
@@ -1257,18 +1448,56 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             }
         }
         else { // if there is no var declaration statement then the expression and update pointers are different
-            asprintf(&line, "\t%s:", forStartLabel);
+            asprintf(&line, "\t%s:", startLabel);
             addLineToFile(line);
 
-            // check condition type
-            char* conditionType = checkSemantics(forLoopScope, stack, Node->left);
-            if (strcmp("BOOL", conditionType) != 0) {
-                printf("SEMANTIC ERROR: for loop condition must be of type 'BOOL', instead found '%s'.\n", conditionType);
-                free(Node);
-                free(forLoopScope);
-                free(scope);
-                exit(1);
+            //! check if the condition is complex or simple, and handle both cases accordingly   
+            if ((strcmp(Node->left->right->left->token, "||") == 0 )
+                || (strcmp(Node->left->right->left->token, "&&") == 0)
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->right->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->right->left->token, "! (not)") == 0) && (strcmp(Node->left->right->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->right->left->left->left->left->left->left->left->token, "||") == 0)) 
+                ) {
+
+                // push both labels into the stack to be used later
+                push(stack, endLabel);
+                push(stack, blockLabel);
+
+                // check that condition is of type bool using a recursive call
+                char* conditionType = checkSemantics(forLoopScope, stack, Node->left->right);
+                if (strcmp("BOOL", conditionType) != 0) {
+                    printf("SEMANTIC ERROR: for statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                    free(Node);
+                    free(forLoopScope);
+                    exit(1);
+                }
             }
+            else {
+                // check that condition is of type bool using a recursive call
+                char* conditionType = checkSemantics(forLoopScope, stack, Node->left->right);
+                if (strcmp("BOOL", conditionType) != 0) {
+                    printf("SEMANTIC ERROR: for statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
+                    free(Node);
+                    free(forLoopScope);
+                    exit(1);
+                }
+
+                // finish the 3AC condition print by printing the 'ifz' line 
+                asprintf(&line, "\t\tif %s == 0 goto %s", pop(stack), endLabel);
+                addLineToFile(line);
+            }
+     
+            asprintf(&line, "\t%s:", blockLabel);
+            addLineToFile(line);
 
             // check the semantics of the for loop block
             checkSemantics(forLoopScope, stack, Node->right->left->left);
@@ -1279,19 +1508,20 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             }
         }
 
-        asprintf(&line, "\t\tgoto %s", forStartLabel);
+        asprintf(&line, "\t\tgoto %s", startLabel);
         addLineToFile(line);
 
-        asprintf(&line, "\t%s:", forEndLabel);
+        asprintf(&line, "\t%s:", endLabel);
         addLineToFile(line);
     }
 
     else if (strcmp(Node->token, "FOR INIT") == 0) {
         if (strcmp(Node->left->token, "") != 0) // if no more recursion
             checkSemantics(scope, stack, Node->left);
-    
-        checkSemantics(scope, stack, Node->left->left); // check current item semantics
-        checkSemantics(scope, stack, Node->left->right); // recursive call
+        else { 
+            checkSemantics(scope, stack, Node->left->left); // check current item semantics
+            checkSemantics(scope, stack, Node->left->right); // recursive call
+        }
     }
 
     else if (strcmp(Node->token, "UPDATE") == 0) {
@@ -1333,24 +1563,49 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
     }
 
     else if (strcmp(Node->token, "ID ASSIGN") == 0) {
-        // create a temp var pointer
-        LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
+        char* typeIfFound = NULL;
         Variable* var = NULL;
+        LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
 
-        // try to find var in a function argument
-        char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
-        if (typeIfFound != NULL) {
-            var = varNode->variable;
-            var->type = typeIfFound;
-        } 
-        else {
-            // find the variable in the scopes
-            var = findVarNodeInScope(scope, varNode);
-            if (var == NULL) {
+        var = findVarNodeInScope(scope, varNode);
+        if (var == NULL) {
+            typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
+            if (typeIfFound != NULL) {
+                var = varNode->variable;
+                var->type = typeIfFound;
+            }
+            else {
                 printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
                 free(var);
                 free(scope);
                 exit(1);
+            }
+        }
+
+        //! checking for assignment of complex bool statemenets into variables
+        if (strcmp(var->type, "BOOL") == 0) {
+            
+            if ((strcmp(Node->right->left->left->token, "&&") == 0) 
+                || (strcmp(Node->right->left->left->token, "||") == 0)
+                || ((strcmp(Node->right->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->right->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->right->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->right->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->right->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->right->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->right->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->right->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->right->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->right->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->token, "! (not)") == 0) && (strcmp(Node->right->left->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->right->left->left->left->left->left->left->left->left->token, "||") == 0))
+
+                ) {
+
+                // sending two labels into the recursive call as well as the var->name to know that we have an assignment
+                char* trueLabel = getNextLabel();
+                char* falseLabel = getNextLabel();
+                push(stack, var->name); 
+                push(stack, trueLabel); 
+                push(stack, falseLabel); 
             }
         }
         
@@ -1441,33 +1696,30 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
     }
     
     else if (strcmp(Node->token, "* ID ASSIGN") == 0) {
-        // creating a temp var pointer
+        // find var in current scope and then in func args
+        char* typeIfFound;
         LinkedListNode* varNode = makeVarNode(Node->left->token, NULL, NULL);
-        Variable* var = NULL;
-
-        // try to find var in a function argument
-        char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
-        if (typeIfFound != NULL) {
-            var = varNode->variable;
-            var->type = typeIfFound;
-        } 
-        else {
-            // find the variable in the scopes
-            var = findVarNodeInScope(scope, varNode);
-            if (var == NULL) {
+        Variable* var = findVarNodeInScope(scope, varNode);
+        if (var == NULL) {
+            typeIfFound = findVarInFuncArgs(scope->father, Node->left->token);
+            if (typeIfFound != NULL) {
+                var = varNode->variable;
+                var->type = typeIfFound;
+            }
+            else {
                 printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
                 free(var);
                 free(scope);
                 exit(1);
             }
-            else if (strcmp(var->type, "STRING") == 0) { // check if the variable is of type string
-                printf("SEMANTIC ERROR: type mismatch on identifier '*%s', cannot use '*' operator on identifiers of type 'STRING'.\n", var->name);
-                free(Node);
-                free(scope);
-                exit(1);
-            }
         }
-        
+        else if (strcmp(var->type, "STRING") == 0) { // check if the variable is of type string
+            printf("SEMANTIC ERROR: type mismatch on identifier '*%s', cannot use '*' operator on identifiers of type 'STRING'.\n", var->name);
+            free(Node);
+            free(scope);
+            exit(1);
+        }
+
         //check if given type is of type pointer and if so we need to check its value type
         char* foundType = checkSemantics(scope, stack, Node->right); //pushes into stack: push("*c");
 
@@ -1655,83 +1907,6 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
         return "CHAR*";
     }
 
-    else if (strcmp(Node->token, "ID[]") == 0) {
-        printf("test test test\n");
-        // find the variable in the scopes
-        LinkedListNode* varNode = makeVarNode(Node->left->left->token, NULL, NULL);
-        Variable* var = findVarNodeInScope(scope, varNode);
-        if (var == NULL) {
-            printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->left->token);
-            free(var);
-            free(scope);
-            exit(1);
-        }
-
-        // check that the id is of type string
-        if (strcmp(var->type, "STRING") != 0) {
-            printf("SEMANTIC ERROR: can't assign index value to identifier of type '%s', it is only possible for type 'STRING'.\n", var->type);
-            free(Node);
-            free(scope);
-            exit(1);
-        }
-
-        // check that expression is of type int
-        char* indexType = checkSemantics(scope, stack, Node->left->right); //? t0 = 7
-        if (strcmp(indexType, "INT") != 0) {
-            printf("SEMANTIC ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", var->name, indexType);
-            free(Node);
-            free(scope);
-            exit(1); 
-        }
-        
-        // check that string size is not an expression but a simple value to check if that index is valid
-        if ((Node->left->right->left->token != NULL) && (strcmp(Node->left->right->left->token, "VALUE") == 0) && 
-            (Node->left->right->left->right == NULL) && (Node->left->right->left->left != NULL))  { // the pointers help against segmenration faults
-            
-            // check that index expression is less than or equal to the declared length and that its not negative
-            int indexValue = atoi(Node->left->right->left->left->left->token);
-            if (indexValue < 0) {
-                printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', index '%d' is invalid.\n", var->name, indexValue);
-                free(Node);
-                free(scope);
-                exit(1); 
-            }
-            
-            if (var->len != NULL) {
-                int maxStringLen = atoi(var->len);
-                if (indexValue > maxStringLen) {
-                    printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', expected index <= '%d' but found index '%d'.\n", var->name, maxStringLen, indexValue);
-                    free(Node);
-                    free(scope);
-                    exit(1); 
-                }
-            }
-        }
-
-        //todo: Part 3
-        // temp var for printing into the file
-        char* line;
-        // print the pointer to the string start
-        char* nextVarTemp1 = getNextVar();
-        asprintf(&line, "\t\t%s = %s", nextVarTemp1, var->name); //? t1 = password
-        addLineToFile(line);
-
-        // print the 't' that will hold the address of the string with the offset
-        char* nextVarTemp2 = getNextVar();
-        asprintf(&line, "\t\t%s = %s + %s", nextVarTemp2, nextVarTemp1, pop(stack)); //? t2 = t1 + t0
-        addLineToFile(line);
-
-        // print the 't' that holds the value of the string at the given offset
-        char* nextVarTemp3 = getNextVar();
-        asprintf(&line, "\t\t%s = *%s", nextVarTemp3, nextVarTemp2); //? t3 = *t2
-        addLineToFile(line);
-        free(line);
-
-        // push the last temp var that holds the value in the string offset to be used later
-        push(stack, nextVarTemp3);
-
-        return "CHAR";
-    }
 
 
     else if (strcmp(Node->token, "EXPRESSION") == 0) { // 🛑 🛑 🛑 🛑 🛑 🛑  EXPRESSION  🛑 🛑 🛑 🛑 🛑 🛑 //
@@ -1771,7 +1946,14 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
 
             //todo: Part 3
             // add the '*' to the variable so that we will print it correctly in the recursive call
-            push(stack, concat("*", pop(stack))); 
+            char* nextVarTemp = getNextVar();
+            char *line; 
+            asprintf(&line, "\t\t%s = *%s", nextVarTemp, pop(stack));
+            addLineToFile(line);
+            push(stack, nextVarTemp); 
+
+            // add the '*' to the variable so that we will print it correctly in the recursive call
+            // push(stack, concat("*", pop(stack))); 
 
             return checkArithmetics("*", type, NULL); // returning the correct value using a helper function
         }
@@ -1781,13 +1963,8 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             return checkSemantics(scope, stack, Node->left->left);
         }
 
-        else if (strcmp(Node->left->left->token, "ID") == 0) {
-            // try to find var in a function argument
-            char* typeIfFound = findVarInFuncArgs(scope->father, Node->left->left->left->token);
-            if (typeIfFound != NULL) {
-                return typeIfFound;
-            }
-            // otherwise try to find it in a scope
+        else if (strcmp(Node->left->token, "ID[]") == 0) {
+            // find the variable in the scopes
             LinkedListNode* varNode = makeVarNode(Node->left->left->left->token, NULL, NULL);
             Variable* var = findVarNodeInScope(scope, varNode);
             if (var == NULL) {
@@ -1795,6 +1972,67 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 free(var);
                 free(scope);
                 exit(1);
+            }
+
+            // check that the id is of type string
+            if (strcmp(var->type, "STRING") != 0) {
+                printf("SEMANTIC ERROR: can't assign index value to identifier of type '%s', it is only possible for type 'STRING'.\n", var->type);
+                free(Node);
+                free(scope);
+                exit(1);
+            }
+
+            // check that expression is of type int
+            char* indexType = checkSemantics(scope, stack, Node->left->left->right);
+            if (strcmp(indexType, "INT") != 0) {
+                printf("SEMANTIC ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", var->name, indexType);
+                free(Node);
+                free(scope);
+                exit(1); 
+            }
+
+            //todo: Part 3
+            // temp var for printing into the file
+            char* line;
+            // print the pointer to the string start
+            char* nextVarTemp1 = getNextVar();
+            asprintf(&line, "\t\t%s = %s", nextVarTemp1, var->name); //? t1 = password
+            addLineToFile(line);
+
+            // print the 't' that will hold the address of the string with the offset
+            char* nextVarTemp2 = getNextVar();
+            asprintf(&line, "\t\t%s = %s + %s", nextVarTemp2, nextVarTemp1, pop(stack)); //? t2 = t1 + t0
+            addLineToFile(line);
+
+            // print the 't' that holds the value of the string at the given offset
+            char* nextVarTemp3 = getNextVar();
+            asprintf(&line, "\t\t%s = *%s", nextVarTemp3, nextVarTemp2); //? t3 = *t2
+            addLineToFile(line);
+            free(line);
+
+            // push the last temp var that holds the value in the string offset to be used later
+            push(stack, nextVarTemp3);
+            
+            return "CHAR"; 
+        }
+
+        else if (strcmp(Node->left->left->token, "ID") == 0) {
+            // try to find var in a function argument
+            char* typeIfFound;
+            LinkedListNode* varNode = makeVarNode(Node->left->left->left->token, NULL, NULL);
+            Variable* var = findVarNodeInScope(scope, varNode);
+            if (var == NULL) {
+                typeIfFound = findVarInFuncArgs(scope->father, Node->left->left->left->token);
+                if (typeIfFound != NULL) {
+                    var = varNode->variable;
+                    var->type = typeIfFound;
+                }
+                else {
+                    printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->left->left->token);
+                    free(var);
+                    free(scope);
+                    exit(1);
+                }
             }
 
             //todo: Part 3
@@ -1856,18 +2094,49 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
         }
         else if (strcmp(Node->left->token, "! (not)") == 0) {
             //todo: Part 3
-            // pushing '!' into the stack to be used as a flag, such that the conditions will check it and print it
-            push(stack, "!");
+            // checking for complex bool statemenets into variables
+            if ((strcmp(Node->left->left->left->token, "&&") == 0) 
+                || (strcmp(Node->left->left->left->token, "||") == 0)
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "||") == 0))
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "&&") == 0))
+                || ((strcmp(Node->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->token, "( )") == 0) && (strcmp(Node->left->left->left->left->left->left->left->token, "&&") == 0))) {
+                
+                // pushing '!' into the stack to be used as a flag, such that the conditions will check it and print it
+                push(stack, "!"); 
 
-            // checking the type of the value under the '!' operator
-            char* type = checkSemantics(scope, stack, Node->left->left);
-            char* resType = checkArithmetics("!", type, NULL);
-            if (resType == NULL) {
-                printf("SEMANTIC ERROR: type mismatch on '%s' operator, expected expression of type 'BOOL', but found '%s'.\n", Node->left->token, type);
-                free(scope);
-                exit(1);
+                // checking the type of the value under the '!' operator
+                char* type = checkSemantics(scope, stack, Node->left->left);
+                
+                char* resType = checkArithmetics("!", type, NULL);
+                if (resType == NULL) {
+                    printf("SEMANTIC ERROR: type mismatch on '%s' operator, expected expression of type 'BOOL', but found '%s'.\n", Node->left->token, type);
+                    free(scope);
+                    exit(1);
+                }
+                return resType;
             }
-            return resType;
+            else {
+                // checking the type of the value under the '!' operator
+                char* type = checkSemantics(scope, stack, Node->left->left);
+                char* line;
+                if ((stack != NULL) && (peek(stack)[0] != 'L')) {
+                    char* temp = pop(stack);
+                    char* tempVar = getNextVar();
+                    asprintf(&line, "\t\t%s = !%s", tempVar, temp);
+                    addLineToFile(line);
+                    push(stack, tempVar);
+                }
+
+                char* resType = checkArithmetics("!", type, NULL);
+                if (resType == NULL) {
+                    printf("SEMANTIC ERROR: type mismatch on '%s' operator, expected expression of type 'BOOL', but found '%s'.\n", Node->left->token, type);
+                    free(scope);
+                    exit(1);
+                }
+                return resType;
+            }
+
         }
         else if (strcmp(Node->left->token, "+") == 0
                 || strcmp(Node->left->token, "-") == 0
@@ -1933,13 +2202,6 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 }
             }
 
-            // this flag tells us if the condition has '!' on it
-            int notFlag = 0;
-            if (strcmp(peek(stack), "!") == 0) {
-                pop(stack);
-                notFlag = 1;
-            }
-
             // using a helper function to check if the aritmetic expression is correct and valid by checking the types of the operands
             char* leftType = checkSemantics(scope, stack, Node->left->left);
             char* rightType = checkSemantics(scope, stack, Node->left->right);
@@ -1964,27 +2226,6 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             asprintf(&computeLine, "\t\t%s = %s %s %s", tempVar, leftVal, opVal, rightVal);
             addLineToFile(computeLine);
             incrementFunctionSize(resType); // counting the t that holds the condition result 
-            //funcSize += 4; // counting the t that holds the condition result //! check what shay prefers 
-
-            // check if there is '!', if so then create a new tempVar that will hold the '!condition'
-            if (notFlag == 1) {
-                char* temp = tempVar;
-                tempVar = getNextVar();
-                asprintf(&computeLine, "\t\t%s = !%s", tempVar, temp);
-                addLineToFile(computeLine);
-            }
-
-            char* elseLabel = peek(stack);
-            if (elseLabel != NULL) {
-                if ((strcmp(elseLabel, "&&") != 0) && (strcmp(elseLabel, "||") != 0)) {
-                    asprintf(&computeLine, "\t\tif %s == 0 goto %s", tempVar, elseLabel);
-                    addLineToFile(computeLine);
-                    push(stack, elseLabel);
-                }
-                else {
-                    pop(stack);
-                }
-            } 
 
             // push the temp var to the stack to be used later
             push(stack, tempVar);
@@ -1994,61 +2235,114 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             return resType;
         }
         else if (strcmp(Node->left->token, "&&") == 0) {
+            char* line;
+            char* variable = NULL;
+            int isNotFlag = 0;
+            if ((stack != NULL) && (peek(stack) != NULL) && (peek(stack)[0] != 'L') && (peek(stack)[0] == '!')) { 
+                //! checks for the end of the recursion
+                if ((strcmp(Node->left->right->left->token, "&&") != 0)) {
+                    pop(stack);
+                    isNotFlag = 1;
+                }
+                else {
+                    isNotFlag = 0; 
+                }
+            }
+            char* trueLabel = getNextLabel();
+            char* falseLabel = NULL;
+            char* ifLabel = pop(stack); // get the labels out of the stack
+            char* elseLabel = pop(stack);
+            
+            if ((stack != NULL) && (peek(stack) != NULL) && (peek(stack)[0] != 'L') && (peek(stack)[0] != '!') && (peek(stack)[0] != 't')) {
+                variable = pop(stack);
+            }
 
-            // check explicit division by zero
-            if (strcmp(Node->left->token, "/") == 0) {
-                if (strcmp(Node->left->right->left->left->left->token, "0") == 0) {
-                    printf("SEMANTIC ERROR: division by zero detected.\n");
-                    free(scope);
-                    exit(1);
+            //* checking if the LEFT side has a complex condition, in that case we want to push the trueLabel such that if the left condition is true it will know to jump to the right side of the '&&' and not to the 'IF'
+            if ((Node->left->left->left != NULL) && 
+                    ((strcmp(Node->left->left->left->token, "( )") == 0)
+                    && ((strcmp(Node->left->left->left->left->left->token, "||") == 0)
+                        || (strcmp(Node->left->left->left->left->left->token, "&&") == 0)))
+                ) { 
+                push(stack, elseLabel);   
+                push(stack, trueLabel);
+            }
+            else {
+                push(stack, elseLabel);   
+                push(stack, ifLabel);
+            }
+
+            // checking the left side type recursively
+            char* leftType = checkSemantics(scope, stack, Node->left->left);
+
+            // print labels to the file
+            if (peek(stack)[0] != 'L') {
+                asprintf(&line, "\t\tif %s goto %s", pop(stack), trueLabel);
+                addLineToFile(line);
+                asprintf(&line, "\t\tgoto %s", elseLabel);
+                addLineToFile(line);   
+            }
+            asprintf(&line, "\t%s:", trueLabel);
+            addLineToFile(line); 
+
+            if ((strcmp(Node->left->right->left->token, "&&") == 0)
+                || (strcmp(Node->left->right->left->token, "( )") == 0)) {
+                trueLabel = pop(stack);
+                push(stack, ifLabel);
+            }
+
+            // checking the right side type recursively
+            char* rightType = checkSemantics(scope, stack, Node->left->right);
+           
+            // print labels to the file
+            if ((stack != NULL) && (peek(stack)[0] != 'L') ) {
+                if ( (isNotFlag == 0) && (strcmp(ifLabel, "!") != 0) ) {
+                    asprintf(&line, "\t\tif %s goto %s", pop(stack), ifLabel);
+                    addLineToFile(line); 
+                    asprintf(&line, "\t\tgoto %s", elseLabel);
+                    addLineToFile(line); 
+                    
+                } else if (isNotFlag == 1) {
+                    //! print not on last condition to the file
+                    char* popVal = pop(stack);
+                    char* nextTempVar = getNextVar();
+                    asprintf(&line, "\t\t%s = !%s", nextTempVar, popVal);
+                    addLineToFile(line);
+                    asprintf(&line, "\t\tif %s goto %s", nextTempVar, ifLabel);
+                    addLineToFile(line); 
+                    asprintf(&line, "\t\tgoto %s", elseLabel);
+                    addLineToFile(line); 
+                    push(stack, nextTempVar);
                 }
             }
 
+            if (variable != NULL) {
+                if (isNotFlag == 1) {
+                    //! print not on last condition to the file
+                    char* popVal = pop(stack);
+                    asprintf(&line, "\t\tif %s goto %s", popVal, ifLabel);
+                    addLineToFile(line); 
+                    asprintf(&line, "\t\tgoto %s", elseLabel);
+                    addLineToFile(line); 
+                    push(stack, popVal);
+                }
+                char* nextLabel = getNextLabel();
+                char* nextTempVar = getNextVar();
+                asprintf(&line, "\t%s:", ifLabel);
+                addLineToFile(line);  
+                asprintf(&line, "\t\t%s = true", nextTempVar);
+                addLineToFile(line); 
+                asprintf(&line, "\t\tgoto %s", nextLabel);
+                addLineToFile(line); 
+                asprintf(&line, "\t%s:", elseLabel);
+                addLineToFile(line); 
+                asprintf(&line, "\t\t%s = false", nextTempVar);
+                addLineToFile(line); 
+                asprintf(&line, "\t%s:", nextLabel);
+                addLineToFile(line);
+                push(stack, nextTempVar);
+            }
+            
             // using a helper function to check if the aritmetic expression is correct and valid by checking the types of the operands
-            // char* leftType = checkSemantics(scope, stack, Node->left->left);
-            // char* rightType = checkSemantics(scope, stack, Node->left->right);
-            // char* resType = checkArithmetics(Node->left->token, leftType, rightType);
-            // if (resType == NULL) {
-            //     printf("SEMANTIC ERROR: type mismatch on '%s' operator.\n", Node->left->token);
-            //     free(scope);
-            //     exit(1);
-            // } 
-
-            char* opVal = Node->left->token;
-            char* computeLine;
-
-            push(stack, "&&");
-            // Handle both sides of the operator, first the left and then the right side
-            char* leftType = checkSemantics(scope, stack, Node->left->left);
-            if (strcmp(peek(stack), "&&") != 0) {
-                char* leftVal = pop(stack);
-
-                pop(stack);
-                char* label1 = pop(stack);
-                push(stack, label1);
-                asprintf(&computeLine, "\t\tif %s == 0 goto %s", leftVal, label1);
-                addLineToFile(computeLine);
-            }
-            else {
-                pop(stack);
-            }
-
-            // Right side
-            push(stack, "&&");
-            char* rightType = checkSemantics(scope, stack, Node->left->right);
-            if (strcmp(peek(stack), "&&") != 0) {
-                char* rightVal = pop(stack);
-
-                pop(stack);
-                char* label2 = pop(stack);
-                push(stack, label2);
-                asprintf(&computeLine, "\t\tif %s == 0 goto %s", rightVal, label2);
-                addLineToFile(computeLine);
-            }
-            else {
-                pop(stack);
-            }
-
             char* resType = checkArithmetics(Node->left->token, leftType, rightType);
             if (resType == NULL) {
                 printf("SEMANTIC ERROR: type mismatch on '%s' operator.\n", Node->left->token);
@@ -2056,69 +2350,148 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 exit(1);
             } 
 
+            // return the result type of this '&&' condition as part of the semantic checks
             return resType;
-
         }
         else if (strcmp(Node->left->token, "||") == 0) {
-
-            // check explicit division by zero
-            if (strcmp(Node->left->token, "/") == 0) {
-                if (strcmp(Node->left->right->left->left->left->token, "0") == 0) {
-                    printf("SEMANTIC ERROR: division by zero detected.\n");
-                    free(scope);
-                    exit(1);
+            char* line;
+            char* variable = NULL;
+            int isNotFlag = 0;
+            if ((stack != NULL) && (peek(stack) != NULL) && (peek(stack)[0] != 'L') && (peek(stack)[0] == '!')) { 
+                //! checks for the end of the recursion
+                if ((strcmp(Node->left->right->left->token, "||") != 0)) {
+                    pop(stack);
+                    isNotFlag = 1;
                 }
+                else {
+                    isNotFlag = 0; 
+                }
+            }
+            char* trueLabel = NULL;
+            char* falseLabel = NULL;
+            char* ifLabel = pop(stack);
+            char* elseLabel = pop(stack);
+
+            if ((stack != NULL) && (peek(stack) != NULL) && (peek(stack)[0] != 'L') && (peek(stack)[0] != '!') && (peek(stack)[0] != 't'))
+                variable = pop(stack);
+            
+            //* check if there is an '&&' on the LEFT side, if so then push the falseLabel into the stack instead of the original elseLabel, that way the left side will know to jump to the next condition in line correctly
+            if ((strcmp(Node->left->left->left->token, "&&") == 0)
+                || ((strcmp(Node->left->left->left->token, "( )") == 0)
+                    )) {
+                falseLabel = getNextLabel();
+                push(stack, falseLabel);
+            }
+            else {
+                push(stack, elseLabel);
+            }
+
+            if ((strcmp(Node->left->left->left->token, "( )") == 0)
+                && (strcmp(Node->left->left->left->left->left->token, "&&") == 0)) {
+                trueLabel = getNextLabel();
+                push(stack, trueLabel);
+            }
+            else {
+                push(stack, ifLabel);
+            }
+   
+            // checking the left side type recursively
+            char* leftType = checkSemantics(scope, stack, Node->left->left);
+        
+            if ((stack != NULL) && (peek(stack) != NULL) && (peek(stack)[0] != 'L') && (peek(stack)[0] != '!') && (peek(stack)[0] == 't')) {
+                if (strcmp(ifLabel, "!") == 0) {
+                    asprintf(&line, "\t\tif %s goto %s", pop(stack), elseLabel);
+                    addLineToFile(line);
+                }
+                else {
+                    asprintf(&line, "\t\tif %s goto %s", pop(stack), ifLabel);
+                    addLineToFile(line);
+                }
+            }
+
+            // print the false label if it exists
+            if (falseLabel != NULL) {
+                asprintf(&line, "\t%s:", falseLabel);
+                addLineToFile(line); 
+            }
+
+            //! checks for not in the stack
+            if ((stack != NULL) && (peek(stack) != NULL) && (peek(stack)[0] != 'L') && (peek(stack)[0] == '!')) {
+                pop(stack);
+                ifLabel = pop(stack);
+                falseLabel = pop(stack);
+                push(stack, elseLabel);
+                push(stack, ifLabel);
+                push(stack, "!");
+            }
+            else { //! if there is no not
+                ifLabel = pop(stack);
+                falseLabel = pop(stack);
+                push(stack, elseLabel);
+                push(stack, ifLabel);
+            }
+
+  
+            // checking the right side type recursively
+            char* rightType = checkSemantics(scope, stack, Node->left->right);
+
+            //! print labels to the file
+            if ((stack != NULL) && (peek(stack)[0] != 'L') ) {
+                if ( (isNotFlag == 0) && (strcmp(ifLabel, "!") != 0) ) {
+                    asprintf(&line, "\t\tif %s goto %s", pop(stack), ifLabel);
+                    addLineToFile(line); 
+                    asprintf(&line, "\t\tgoto %s", elseLabel);
+                    addLineToFile(line); 
+                    
+                } else if (isNotFlag == 1) {
+                    // print labels to the file
+                    char* popVal = pop(stack);
+                    char* nextTempVar = getNextVar();
+                    asprintf(&line, "\t\t%s = !%s", nextTempVar, popVal);
+                    addLineToFile(line);
+                    asprintf(&line, "\t\tif %s goto %s", nextTempVar, ifLabel);
+                    addLineToFile(line); 
+                    asprintf(&line, "\t\tgoto %s", elseLabel);
+                    addLineToFile(line); 
+                    push(stack, nextTempVar);
+                }
+            }
+
+            if (trueLabel != NULL) {
+                asprintf(&line, "\t%s:", trueLabel);
+                addLineToFile(line); 
+            }
+
+            
+            if (variable != NULL) {
+                char* nextLabel = getNextLabel();
+                char* nextTempVar = getNextVar();
+                if (isNotFlag == 1) {
+                    char* popVal = pop(stack);
+                    asprintf(&line, "\t\tif %s goto %s", popVal, ifLabel);
+                    addLineToFile(line); 
+                    asprintf(&line, "\t\tgoto %s", elseLabel);
+                    addLineToFile(line); 
+                    push(stack, popVal);
+                }
+                if (trueLabel == NULL) {
+                    asprintf(&line, "\t%s:", ifLabel);
+                    addLineToFile(line); 
+                } 
+                asprintf(&line, "\t\t%s = true", nextTempVar);
+                addLineToFile(line); 
+                asprintf(&line, "\t\tgoto %s", nextLabel);
+                addLineToFile(line); 
+                asprintf(&line, "\t%s:", elseLabel);
+                addLineToFile(line); 
+                asprintf(&line, "\t\t%s = false", nextTempVar);
+                addLineToFile(line); 
+                asprintf(&line, "\t%s:", nextLabel);
+                addLineToFile(line);
+                push(stack, nextTempVar);
             }
 
             // using a helper function to check if the aritmetic expression is correct and valid by checking the types of the operands
-            // char* leftType = checkSemantics(scope, stack, Node->left->left);
-            // char* rightType = checkSemantics(scope, stack, Node->left->right);
-            // char* resType = checkArithmetics(Node->left->token, leftType, rightType);
-            // if (resType == NULL) {
-            //     printf("SEMANTIC ERROR: type mismatch on '%s' operator.\n", Node->left->token);
-            //     free(scope);
-            //     exit(1);
-            // } 
-
-
-            char* opVal = Node->left->token;
-            char* computeLine;
-
-            // Handle both sides of the operator, first the left and then the right side
-            push(stack, "||");
-            char* leftType = checkSemantics(scope, stack, Node->left->left);
-            if (strcmp(peek(stack), "||") != 0) {
-                printf("inside || => ");
-                printStack(stack);
-                char* leftVal = pop(stack);
-
-                if (strcmp(peek(stack), "||") == 0) {
-                    pop(stack);
-                }
-                char* label1 = pop(stack);
-                push(stack, label1);
-                asprintf(&computeLine, "\t\tif %s goto %s", leftVal, label1);
-                addLineToFile(computeLine);
-            }
-
-            // Right side
-            push(stack, "||");
-            char* rightType = checkSemantics(scope, stack, Node->left->right);
-            if (strcmp(peek(stack), "||") != 0) {
-                char* rightVal = pop(stack);
-
-                if (strcmp(peek(stack), "||") == 0) {
-                    pop(stack);
-                }
-                printf("right side test1\n");
-                char* label2 = pop(stack);
-                printf("right side test2\n");
-                push(stack, label2);
-                printf("right side test3\n");
-                asprintf(&computeLine, "\t\tif %s == 0 goto %s", rightVal, label2);
-                addLineToFile(computeLine);
-            }
-
             char* resType = checkArithmetics(Node->left->token, leftType, rightType);
             if (resType == NULL) {
                 printf("SEMANTIC ERROR: type mismatch on '%s' operator.\n", Node->left->token);
@@ -2126,6 +2499,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 exit(1);
             } 
 
+            // return the result type of this '||' condition as part of the semantic checks
             return resType;
         }
     }
@@ -2155,7 +2529,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
         // checking that the private/public declerations match
         if (currentFunction->isPrivate == 0 && func->isPrivate == 1) {
             // finding the function that is been called in the scope of the function from which the call is been made, thats why: 'scopePtr'
-            Function* funcInCurrentScope = findFuncNodeInCurrentScope(scopePtr, funcNode->function->name);    
+            Function* funcInCurrentScope = findFuncNodeUntillGivenScope(scope, scopePtr, funcNode->function->name);    
             if (funcInCurrentScope == NULL) {
                 printf("SEMANTIC ERROR: public function '%s' cannot call a private function '%s' because they are not in the same scope.\n", currentFunction->name, func->name);
                 exit(1);
@@ -2164,6 +2538,13 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
 
         // temp variable for printing lines into the file, part of Part 3, used in the following IF statement
         char *line;
+
+        if ((func->countArgs != 0) && (Node->right == NULL)) {
+            printf("SEMANTIC ERROR: function '%s' expects '%d' arguments, but no arguments were given.\n", funcNode->function->name, func->countArgs);
+            free(funcNode);
+            free(scope);
+            exit(1); 
+        }
 
         // checking if the function needs to get any params
         if (Node->right != NULL) { // has params
@@ -2230,7 +2611,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 totalArgsValue = totalArgsValue + incrementFunctionSize(func->args[i]->type);
             }
             funcSize -= totalArgsValue; //* since the increment function automaticali updates the funcSize, we want to use its if-else statement but not increment
-            asprintf(&line, "\t\tPopParam %d", totalArgsValue);
+            asprintf(&line, "\t\tPopParams %d", totalArgsValue);
             addLineToFile(line);
         }
         else { // if there are NO aguments to the function
@@ -2274,18 +2655,11 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 exit(1);
             }
 
+            //todo: Part 3
             asprintf(&returnLine, "\t\treturn ;");
             addLineToFile(returnLine);
         }
         else {
-            //todo: Part 3
-            // print label incase there is one in the stack
-            // char* label = checkLabel(stack);
-            // if (label != NULL) {
-            //     asprintf(&returnLine, "\t%s:", label);
-            //     addLineToFile(returnLine);
-            // }
-
             // if there is an expression after the return then check that the type of the expression matches the return type of the current function
             char* type = checkSemantics(scope, stack, Node->left);
             if (strcmp(type, currentFunction->returnType) != 0) {
@@ -2294,6 +2668,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 exit(1); 
             }
 
+            //todo: Part 3
             // pop the temp val from the stack
             char* val = pop(stack);
 

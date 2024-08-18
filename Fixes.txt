@@ -1,0 +1,49 @@
+** you can play with lines: 17-20 and 26-33
+
+// print labels to the file
+if ((stack != NULL) && (peek(stack)[0] != 'L') ) {
+    if ( (isNotFlag == 0) && (strcmp(ifLabel, "!") != 0) ) {
+        asprintf(&line, "\t\tif %s goto %s", pop(stack), ifLabel);
+        addLineToFile(line); 
+        asprintf(&line, "\t\tgoto %s", elseLabel);
+        addLineToFile(line); 
+        
+    } else if (isNotFlag == 1) {
+        // print labels to the file
+        char* popVal = pop(stack);
+        char* nextTempVar = getNextVar();
+        asprintf(&line, "\t\t%s = !%s", nextTempVar, popVal);
+        addLineToFile(line);
+        asprintf(&line, "\t\tif %s goto %s", nextTempVar, ifLabel);
+        addLineToFile(line); 
+        asprintf(&line, "\t\tgoto %s", elseLabel);
+        addLineToFile(line); 
+        push(stack, nextTempVar);
+    }
+}
+
+if (variable != NULL) {
+    if (isNotFlag == 1) {
+        char* popVal = pop(stack);
+        asprintf(&line, "\t\tif %s goto %s", popVal, ifLabel);
+        addLineToFile(line); 
+        asprintf(&line, "\t\tgoto %s", elseLabel);
+        addLineToFile(line); 
+        push(stack, popVal);
+    }
+    char* nextLabel = getNextLabel();
+    char* nextTempVar = getNextVar();
+    asprintf(&line, "\t%s:", ifLabel);
+    addLineToFile(line);  
+    asprintf(&line, "\t\t%s = true", nextTempVar);
+    addLineToFile(line); 
+    asprintf(&line, "\t\tgoto %s", nextLabel);
+    addLineToFile(line); 
+    asprintf(&line, "\t%s:", elseLabel);
+    addLineToFile(line); 
+    asprintf(&line, "\t\t%s = false", nextTempVar);
+    addLineToFile(line); 
+    asprintf(&line, "\t%s:", nextLabel);
+    addLineToFile(line);
+    push(stack, nextTempVar);
+}

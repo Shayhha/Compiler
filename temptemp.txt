@@ -1,0 +1,47 @@
+    for (var int: i <- 99; (i < 1 || i != 2) || (i < 3 || (i < 10 || i != 10938) && s[1] == '3') && (i > (i + 7)); i <- i + 1) {
+        a <- 45;
+    }
+
+
+    if (i < 1 && i != 2 || (i != 3 || i > 7)) {
+        a <- 45;
+    }
+
+
+                //* check if there is an '&&' on the LEFT side, if so then push the falseLabel into the stack instead of the original elseLabel, that way the left side will know to jump to the next condition in line correctly
+            if ((strcmp(Node->left->left->left->token, "&&") == 0)
+                || ((strcmp(Node->left->left->left->token, "( )") == 0)
+                    && (strcmp(Node->left->left->left->left->left->token, "&&") == 0))) {
+                falseLabel = getNextLabel();
+                push(stack, falseLabel);
+            }
+            else {
+                push(stack, elseLabel);
+            }
+            push(stack, ifLabel);
+
+
+
+
+
+char* line;
+char* variable = NULL;
+int isNotFlag = 0;
+if ((stack != NULL) && (peek(stack) != NULL) && (peek(stack)[0] != 'L') && (peek(stack)[0] == '!')) { 
+    //! check this 'if' because in some situations it might be missing something
+    printf("test: %s\n", Node->left->right->left->token);
+    if ((strcmp(Node->left->right->left->token, "( )") != 0) && (strcmp(Node->left->right->left->token, "||") != 0)) {
+        pop(stack);
+        isNotFlag = 1;
+    }
+    else {
+        isNotFlag = 0; 
+    }
+}
+char* trueLabel = NULL;
+char* falseLabel = NULL;
+char* ifLabel = pop(stack);
+char* elseLabel = pop(stack);
+
+if ((stack != NULL) && (peek(stack) != NULL) && (peek(stack)[0] != 'L') && (peek(stack)[0] != '!') && (peek(stack)[0] != 't'))
+    variable = pop(stack);

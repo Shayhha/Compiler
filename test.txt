@@ -1,26 +1,36 @@
+public int hi(args>> int: a,b,c,d; bool: x): static {
+    var int: var1, var2, var3 <- 45;
+    var bool: m <- true, n <- (((a < 3) || !(a == 8)));
+    var int*: ptr;
+    string message[12] <- null;
+    var char: pp;
 
-public int foo(args>> double: x,y) : static {
-    string message[30];
-    var int: a, b;
-    var double: c;
-    a <- 23;
+    if (a > b){
+        a <- a + 7;
+    } 
+    else {
+        c <- 1 + 2;
+    }
 
-    if (a == 23)
-        b <- 10;
-    else 
-        return 453;
+    if ( (c > d) && !('a' != 'v') && (pp != message[2]) )
+        d <- a + d;
 
-    c <-4+5.6;
-    return 4;
-
+    return 123;
 }
 
-public void main() : static {
-    var int: a, b;
+public void main(): static{
+    var int: a;
 
-    a <- 0;
-    while(a < 10) {
-        b <- foo(3.14,45.4);
-        a <- a + b;
+    for(var int: i <- 0 ; i < 10 ; i <- i + 1 ) {
+        a <- a + i;
+    
+        while (a != 5)
+            a <- a + 1;
+
+        a <- 7;
+        do {
+            a <- a + i;
+            i <- i + 1;
+        } while(hi(1, 2, 3, 4, true) >= 10);
     }
 }

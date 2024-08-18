@@ -21,7 +21,8 @@
 %token<strval> TRUE_VAL FALSE_VAL 
 %token<strval> HEX_VAL STRING_VAL ID CHAR_VAL INT_VAL FLOAT_VAL DOUBLE_VAL 
 
-%right AND OR
+%right OR
+%right AND
 %left EQUAL NOT_EQ LESSER GREATER LESSER_EQ GREATER_EQ  
 %left ADD SUB
 %left MULT DIVIDE
@@ -33,7 +34,7 @@
 %type<nodeval> func_statement func_statements declaration declarations statement statements return_statement assignment code functions function_call update function_params for_init_many for_init expression value for_statement function_static func_many_id func_args_decleration function_args function_type function if_statement else_statement block block_contents func_block_contents program while_statement do_while_statement var_declaration many_id param_type string_declaration many_string 
 %%
                                                         // printtree($$, 0);
-program : code {$$ = $1; checktree($$); printf("\n 🂡 ⧓ ⧖ ⧓ ⧖ ⧓ ⧖ ⧔  Semantic Checks Passed! ⧕ ⧖ ⧓ ⧖ ⧓ ⧖ ⧓ 🂡\n"); printf("\n 🂡 ⧓ ⧖ ⧓ ⧖ ⧓ ⧖ ⧔  Created 3-Address-Code successfuly! 🐱‍🚀 ⧕ ⧖ ⧓ ⧖ ⧓ ⧖ ⧓ 🂡\n\n");};
+program : code {$$ = $1; printtree($$, 0); checktree($$); printf("\n 🂡 ⧓ ⧖ ⧓ ⧖ ⧓ ⧖ ⧔  Semantic Checks Passed! ⧕ ⧖ ⧓ ⧖ ⧓ ⧖ ⧓ 🂡\n"); printf("\n 🂡 ⧓ ⧖ ⧓ ⧖ ⧓ ⧖ ⧔  Created 3-Address-Code successfuly! 🐱‍🚀 ⧕ ⧖ ⧓ ⧖ ⧓ ⧖ ⧓ 🂡\n\n");};
 
 code : functions {$$ = mknode("CODE", $1, NULL);}
 
@@ -233,7 +234,6 @@ many_id : ID assignment ',' many_id {$$ = mknode($1, $2, $4);}
 
 assignment : ASSIGN expression {$$ = mknode("ASSIGN",mknode("EXPRESSION", $2, NULL),NULL);} 
         | ASSIGN ADDRESS ID '[' expression ']' {$$ = mknode("&ID[]", mknode("ID", mknode($3, NULL, NULL), mknode("EXPRESSION", $5, NULL)), NULL);}
-        | ASSIGN ID '[' expression ']' {$$ = mknode("ID[]", mknode("ID", mknode($2, NULL, NULL), mknode("EXPRESSION", $4, NULL)), NULL);}
 
 
 
@@ -268,6 +268,7 @@ expression : NULL_VALUE {$$ = mknode($1, NULL, NULL);}
             | ADDRESS '(' ID ')' {$$ = mknode("&", mknode("EXPRESSION", mknode("VALUE", mknode("ID", mknode($3, NULL, NULL), NULL), NULL), NULL), NULL);}
             | '(' expression ')' {$$ = mknode("( )", mknode("EXPRESSION", $2, NULL), NULL);}
             | '|' ID '|' {$$ = mknode("| |", mknode("EXPRESSION", mknode("VALUE", mknode("ID", mknode($2, NULL, NULL), NULL), NULL), NULL), NULL);}
+            | ID '[' expression ']' {$$ = mknode("ID[]", mknode("ID", mknode($1, NULL, NULL), mknode("EXPRESSION", $3, NULL)), NULL);}
             | value {$$ = mknode("VALUE", $1, NULL);}
             | function_call {$$ = mknode("", $1, NULL);} 
          
