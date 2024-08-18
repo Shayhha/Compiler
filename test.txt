@@ -2,7 +2,7 @@ public int hi(args>> int: a,b,c,d; bool: x): static {
     var int: var1, var2, var3 <- 45;
     var bool: m <- true, n <- (((a < 3) || !(a == 8)));
     var int*: ptr;
-    string message[12] <- null;
+    string message[20] <- "asd";
     var char: pp;
 
     if (a > b){

@@ -36,6 +36,7 @@ void printStack(Stack* s);
 
 FILE* openFile();
 void closeFile();
+void cleanAndCloseFile();
 long addLineToFile(const char *line);
 void replaceNInFile(long posN, long posEnd);
 
@@ -159,6 +160,17 @@ void closeFile() {
     if (file != NULL) {
         fclose(file);
     }
+}
+
+void cleanAndCloseFile() {
+    // Ensure the file pointer is not NULL
+    if (file == NULL) {
+        return; // or handle the error appropriately
+    }
+
+    fseek(file, 0, SEEK_SET); // Go to beginning of the file
+    freopen(NULL, "w", file); // Clean the file
+    fclose(file);
 }
 
 // Function to add a line to the file and get the position of the line in the file
@@ -477,6 +489,7 @@ void findAndInitForLoopVars(Scope* scope, Stack* stack, node* Node, char* type) 
                     free(Node);
                     free(currentFunc);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1); 
                 }
             }
@@ -487,6 +500,7 @@ void findAndInitForLoopVars(Scope* scope, Stack* stack, node* Node, char* type) 
             printf("SEMANTIC ERROR: redeclaration of identifier '%s', it has already been declared in this scope.\n", id);
             free(Node);
             free(scope);
+            cleanAndCloseFile();
             exit(1); 
         }
 
@@ -504,6 +518,7 @@ void findAndInitForLoopVars(Scope* scope, Stack* stack, node* Node, char* type) 
                         printf("SEMANTIC ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", id, expectedType, foundType);
                         free(Node);
                         free(scope);
+                        cleanAndCloseFile();
                         exit(1);
                     }
                 }
@@ -513,6 +528,7 @@ void findAndInitForLoopVars(Scope* scope, Stack* stack, node* Node, char* type) 
                 printf("SEMANTIC ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", id, type, foundType);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -560,6 +576,7 @@ void findAndInitVars(Scope* scope, Stack* stack, node* Node, char* type) {
                     printf("SEMANTIC ERROR: redeclaration of identifier '%s', it has already been declared in this scope.\n", Node->token);
                     free(Node);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1); 
                 }
             }
@@ -571,6 +588,7 @@ void findAndInitVars(Scope* scope, Stack* stack, node* Node, char* type) {
         printf("SEMANTIC ERROR: redeclaration of identifier '%s', it has already been declared in this scope.\n", Node->token);
         free(Node);
         free(scope);
+        cleanAndCloseFile();
         exit(1); 
     }
 
@@ -618,6 +636,7 @@ void findAndInitVars(Scope* scope, Stack* stack, node* Node, char* type) {
                         printf("SEMANTIC ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", Node->token, expectedType, foundType);
                         free(Node);
                         free(scope);
+                        cleanAndCloseFile();
                         exit(1);
                     }
                 }
@@ -628,6 +647,7 @@ void findAndInitVars(Scope* scope, Stack* stack, node* Node, char* type) {
                     printf("SEMANTIC ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", Node->token, type, foundType);
                     free(Node);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
             }
@@ -675,6 +695,7 @@ void findAndInitStrings(Scope* scope, Stack* stack, node* Node, char* type) {
         printf("SEMANTIC ERROR: redeclaration of identifier '%s', it has already been declared.\n", Node->left->left->left->token);
         free(Node);
         free(scope);
+        cleanAndCloseFile();
         exit(1); 
     }
 
@@ -684,6 +705,7 @@ void findAndInitStrings(Scope* scope, Stack* stack, node* Node, char* type) {
         printf("SEMANTIC ERROR: string size is invalid for identifier '%s', size must be greater than zero.\n", Node->left->left->left->token);
         free(Node);
         free(scope);
+        cleanAndCloseFile();
         exit(1); 
     }
     
@@ -692,6 +714,7 @@ void findAndInitStrings(Scope* scope, Stack* stack, node* Node, char* type) {
         printf("SEMANTIC ERROR: string size of identifier '%s' can't be 0.\n", Node->left->left->left->token);
         free(Node);
         free(scope);
+        cleanAndCloseFile();
         exit(1); 
     }
     
@@ -703,6 +726,7 @@ void findAndInitStrings(Scope* scope, Stack* stack, node* Node, char* type) {
             printf("SEMANTIC ERROR: type mismatch for identifier '%s', expected 'STRING' or 'NULL' but found '%s'.\n", Node->left->left->left->token, assignemtType);
             free(Node);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
         // checking that the index is valid only if the value is a simple integer, if its an expression then dont check
@@ -712,6 +736,7 @@ void findAndInitStrings(Scope* scope, Stack* stack, node* Node, char* type) {
                 printf("SEMANTIC ERROR: assignment string is too long for identifier '%s', expected length <= '%d' but found string of length '%d'.\n", Node->left->left->left->token, indexValue, assignemntStringLen);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
         }
@@ -985,6 +1010,7 @@ void checktree(node* Node) {
     if (findMainFunction(programScope) == 0) {
         printf("SEMANTIC ERROR: no main function found, program must have one main function.\n");
         free(programScope);
+        cleanAndCloseFile();
         exit(1);
     }
     //printScope(programScope);
@@ -1053,6 +1079,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 free(item);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1); 
             }
         }
@@ -1064,6 +1091,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             free(item);
             free(func);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
         free(func);
@@ -1087,6 +1115,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             long posN = addLineToFile("\t\tBeginFunc N\t\t\n"); // the '\t' is for when the N is large
             if (posN == -1) {
                 fclose(file);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -1098,6 +1127,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             long posEnd = addLineToFile(""); // adding a spacer line and saving the position of this line
             if (posEnd == -1) {
                 fclose(file);
+                cleanAndCloseFile();
                 exit(1);
             }
             
@@ -1158,6 +1188,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: if statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
         }
@@ -1168,6 +1199,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: if statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -1265,6 +1297,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: do while statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
         }
@@ -1275,6 +1308,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: do while statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -1327,6 +1361,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: while statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
         }
@@ -1337,6 +1372,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: while statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -1418,6 +1454,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                     printf("SEMANTIC ERROR: for statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                     free(Node);
                     free(forLoopScope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
             }
@@ -1428,6 +1465,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                     printf("SEMANTIC ERROR: for statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                     free(Node);
                     free(forLoopScope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
 
@@ -1478,6 +1516,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                     printf("SEMANTIC ERROR: for statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                     free(Node);
                     free(forLoopScope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
             }
@@ -1488,6 +1527,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                     printf("SEMANTIC ERROR: for statement condition must be of type 'BOOL', instead it is '%s'.\n", conditionType);
                     free(Node);
                     free(forLoopScope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
 
@@ -1578,6 +1618,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
                 free(var);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
         }
@@ -1628,6 +1669,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                                 printf("SEMANTIC ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", var->name, expectedType, foundType);
                                 free(Node);
                                 free(scope);
+                                cleanAndCloseFile();
                                 exit(1);
                             }
                         }
@@ -1637,6 +1679,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                             printf("SEMANTIC ERROR: type mismatch at declaration of identifier '%s', expected '%s' but found '%s'.\n", var->name, var->type, expectedType);
                             free(Node);
                             free(scope);
+                            cleanAndCloseFile();
                             exit(1);
                         }
                     }
@@ -1672,6 +1715,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: type mismatch for identifier '%s', expected '%s' but found '%s'.\n", Node->left->token, var->type, foundType);
             free(var);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
 
@@ -1710,6 +1754,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
                 free(var);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
         }
@@ -1717,6 +1762,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: type mismatch on identifier '*%s', cannot use '*' operator on identifiers of type 'STRING'.\n", var->name);
             free(Node);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
 
@@ -1730,6 +1776,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: type mismatch at declaration of identifier '*%s', expected '%s' but found '%s'.\n", var->name, expectedType, foundType);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
         }
@@ -1762,6 +1809,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->token);
             free(var);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
 
@@ -1770,6 +1818,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: can't assign index value to identifier of type '%s', it is only possible for type 'STRING'.\n", var->type);
             free(Node);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
         
@@ -1779,6 +1828,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", var->name, indexType);
             free(Node);
             free(scope);
+            cleanAndCloseFile();
             exit(1); 
         }
 
@@ -1792,6 +1842,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', index '%d' is invalid.\n", var->name, indexValue);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1); 
             }
             
@@ -1801,6 +1852,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                     printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', expected index <= '%d' but found index '%d'.\n", var->name, maxStringLen, indexValue);
                     free(Node);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1); 
                 }
             }
@@ -1825,6 +1877,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: type mismatch for identifier '%s', expected 'CHAR' or 'NULL' but found '%s'.\n", var->name, assignemtType);
             free(Node);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
 
@@ -1842,6 +1895,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->left->token);
             free(var);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
 
@@ -1850,6 +1904,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: can't assign index value to identifier of type '%s', it is only possible for type 'STRING'.\n", var->type);
             free(Node);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
 
@@ -1859,6 +1914,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", var->name, indexType);
             free(Node);
             free(scope);
+            cleanAndCloseFile();
             exit(1); 
         }
 
@@ -1872,6 +1928,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', index '%d' is invalid.\n", var->name, indexValue);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1); 
             }
 
@@ -1881,6 +1938,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                     printf("SEMANTIC ERROR: index is out of bounds for identifier '%s', expected index <= '%d' but found index '%d'.\n", var->name, maxStringLen, indexValue);
                     free(Node);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1); 
                 }
             }
@@ -1929,6 +1987,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: using '&' on identifier of type '%s' is undefined.\n", type);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
             return type;
@@ -1941,6 +2000,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: using '*' on identifier of type '%s' is undefined.\n", type);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -1971,6 +2031,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->left->left->token);
                 free(var);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -1979,6 +2040,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: can't assign index value to identifier of type '%s', it is only possible for type 'STRING'.\n", var->type);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -1988,6 +2050,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: string size of identifier '%s' must be of type 'INT', but found '%s'.\n", var->name, indexType);
                 free(Node);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1); 
             }
 
@@ -2031,6 +2094,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                     printf("SEMANTIC ERROR: identifier '%s' was not found.\n", Node->left->left->left->token);
                     free(var);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
             }
@@ -2071,6 +2135,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             if (resType == NULL) {
                 printf("SEMANTIC ERROR: type mismatch on '%s' operator, expected expression of type 'STRING', but found '%s'.\n", Node->left->token, type);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -2112,6 +2177,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 if (resType == NULL) {
                     printf("SEMANTIC ERROR: type mismatch on '%s' operator, expected expression of type 'BOOL', but found '%s'.\n", Node->left->token, type);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
                 return resType;
@@ -2132,6 +2198,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 if (resType == NULL) {
                     printf("SEMANTIC ERROR: type mismatch on '%s' operator, expected expression of type 'BOOL', but found '%s'.\n", Node->left->token, type);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
                 return resType;
@@ -2148,6 +2215,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 if (strcmp(Node->left->right->left->left->left->token, "0") == 0) {
                     printf("SEMANTIC ERROR: division by zero detected.\n");
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
             }
@@ -2159,6 +2227,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             if (resType == NULL) {
                 printf("SEMANTIC ERROR: type mismatch on '%s' operator.\n", Node->left->token);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             } 
 
@@ -2198,6 +2267,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 if (strcmp(Node->left->right->left->left->left->token, "0") == 0) {
                     printf("SEMANTIC ERROR: division by zero detected.\n");
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1);
                 }
             }
@@ -2209,6 +2279,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             if (resType == NULL) {
                 printf("SEMANTIC ERROR: type mismatch on '%s' operator.\n", Node->left->token);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             } 
 
@@ -2347,6 +2418,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             if (resType == NULL) {
                 printf("SEMANTIC ERROR: type mismatch on '%s' operator.\n", Node->left->token);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             } 
 
@@ -2496,6 +2568,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             if (resType == NULL) {
                 printf("SEMANTIC ERROR: type mismatch on '%s' operator.\n", Node->left->token);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             } 
 
@@ -2513,6 +2586,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: function '%s' is not declared.\n", funcNode->function->name);
             free(funcNode);
             free(scope);
+            cleanAndCloseFile();
             exit(1);
         }
 
@@ -2523,6 +2597,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
         // checking that the static declerations match
         if (currentFunction->isStatic == 1 && func->isStatic == 0) {
             printf("SEMANTIC ERROR: static function '%s' cannot call a non-static function '%s'\n", currentFunction->name, func->name);
+            cleanAndCloseFile();
             exit(1);
         }
 
@@ -2532,6 +2607,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             Function* funcInCurrentScope = findFuncNodeUntillGivenScope(scope, scopePtr, funcNode->function->name);    
             if (funcInCurrentScope == NULL) {
                 printf("SEMANTIC ERROR: public function '%s' cannot call a private function '%s' because they are not in the same scope.\n", currentFunction->name, func->name);
+                cleanAndCloseFile();
                 exit(1);
             } 
         }
@@ -2543,6 +2619,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             printf("SEMANTIC ERROR: function '%s' expects '%d' arguments, but no arguments were given.\n", funcNode->function->name, func->countArgs);
             free(funcNode);
             free(scope);
+            cleanAndCloseFile();
             exit(1); 
         }
 
@@ -2557,6 +2634,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                     printf("SEMANTIC ERROR: too many arguments in function call '%s()'\n", funcNode->function->name);
                     free(funcNode);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1); 
                 }
 
@@ -2567,6 +2645,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                         funcNode->function->name, func->args[paramCounter]->name);
                     free(funcNode);
                     free(scope);
+                    cleanAndCloseFile();
                     exit(1); 
                 }
 
@@ -2579,6 +2658,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
                 printf("SEMANTIC ERROR: too few arguments in function call '%s()'\n", funcNode->function->name);
                 free(funcNode);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1); 
             }
 
@@ -2644,6 +2724,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
         if (currentFunction == NULL) {
             printf("SEMANTIC ERROR: could not find function signiture for in current scope.\n");
             free(scope);
+            cleanAndCloseFile();
             exit(1); 
         }
 
@@ -2652,6 +2733,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             if (strcmp(currentFunction->returnType, "VOID") != 0) {
                 printf("SEMANTIC ERROR: return void: 'return ;' can only be in a function with return type VOID. \n");
                 free(scope);
+                cleanAndCloseFile();
                 exit(1);
             }
 
@@ -2665,6 +2747,7 @@ char* checkSemantics(Scope* scope, Stack* stack, node* Node) {
             if (strcmp(type, currentFunction->returnType) != 0) {
                 printf("SEMANTIC ERROR: return type mismatch in function '%s', expected '%s' but found '%s'.\n", currentFunction->name, currentFunction->returnType, type);
                 free(scope);
+                cleanAndCloseFile();
                 exit(1); 
             }
 
