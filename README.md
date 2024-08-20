@@ -1,1 +1,1 @@
-Yet Another Compiler Compiler  ¯\_(ツ)_/¯
+Yet Another Compiler Compiler  ¯\\_(ツ)_/¯
