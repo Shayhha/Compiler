@@ -1,0 +1,19 @@
+public int s3(args>> int : d1): static
+{
+    var int : d2<- 20;
+    if(d1!= d2 && d1 < 8)
+        d2<- d1*3;
+    else
+        d2<- d1/5;
+    return d2+10;
+}
+public void main() :static
+{
+    var int: x<- 10, y;
+    var int: i;
+    for ( i <-0; i < 8; i <- i+2)
+    {
+        y <- s3( x);
+        x<-x-2;
+    }
+}

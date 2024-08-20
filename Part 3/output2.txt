@@ -1,0 +1,56 @@
+s3:
+		BeginFunc 44	
+
+		t0 = 20
+		d2 = t0
+		t1 = d1 != d2
+		if t1 goto L3
+		goto L2
+	L3:
+		t2 = 8
+		t3 = d1 < t2
+		if t3 goto L1
+		goto L2
+	L1:
+		t4 = 3
+		t5 = d1 * t4
+		d2 = t5
+		goto L4
+	L2:
+		t6 = 5
+		t7 = d1 / t6
+		d2 = t7
+	L4:
+		t8 = 10
+		t9 = d2 + t8
+		return t9
+		EndFunc
+
+main:
+		BeginFunc 48	
+
+		t10 = 10
+		x = t10
+		t11 = 0
+		i = t11
+	L5:
+		t12 = 8
+		t13 = i < t12
+		if t13 == 0 goto L7
+	L6:
+		PushParam x
+		t14 = LCall s3
+		PopParams 4
+		y = t14
+		t15 = 2
+		t16 = x - t15
+		x = t16
+		t17 = 2
+		t18 = i + t17
+		i = t18
+		goto L5
+	L7:
+		EndFunc
+
+
+

@@ -1,0 +1,14 @@
+ LEX:
+ 
+ lex fileName.lex
+ cc lex.yy.c -o fileName -ll
+ ./fileName < text.txt
+ 
+ 
+ 
+ YACC:
+ 
+ lex fileName.lex
+ yacc fileName.yacc
+ cc -o fileName y.tab.c -ll -Ly
+ ./fileName < textCode.txt > output.txt

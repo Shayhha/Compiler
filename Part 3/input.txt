@@ -1,0 +1,21 @@
+public int p2(args>> int : m1): static
+{
+    var int :a1;
+    a1<- 10;
+    if(a1== m1 && a1>7)
+        a1<- m1+30;
+    else
+        a1<- m1-15;
+    return a1*2;
+}
+public void main() :static
+{
+    var int: d;
+    var int: w;
+    w<- 5;
+    while(w < 10)
+    {
+        d <- p2( w);
+        w <- w + 2;
+    }
+}

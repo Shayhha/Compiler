@@ -1,0 +1,19 @@
+public double v4(args>> double : k1): static
+{
+    var double : k2;
+    if(k1 > 10 && k1 < 15)
+        k2 <- k1*5;
+    else
+        k2 <-k1/5;
+    return k2+ 2.89;
+}
+public void main() :static
+{
+    var int: x<- 21;
+    var double: y;
+    while (x>7)
+    {
+        y<- v4( 3.62);
+        x<- x - 7;
+    }
+}

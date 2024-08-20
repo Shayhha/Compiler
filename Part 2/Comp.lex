@@ -1,18 +1,22 @@
 %{
+    /*
+        Maxim Subotin - 207695479
+        Shay Hahiashvili - 206423840
+    */
     #include <stdio.h>
 %}
 %%
 
-"bool" {yylval.strval = strdup("bool"); return BOOL;}
-"char" {yylval.strval = strdup("char"); return CHAR;}
-"int" {yylval.strval = strdup("int"); return INT;}
-"double" {yylval.strval = strdup("double"); return DOUBLE;}
-"float" {yylval.strval = strdup("float"); return FLOAT;}
-"string" {yylval.strval = strdup("string"); return STRING;}
-"int*" {yylval.strval = strdup("int*"); return INT_PTR;}
-"char*" {yylval.strval = strdup("char*"); return CHAR_PTR;}
-"double*" {yylval.strval = strdup("double*"); return DOUBLE_PTR;}
-"float*" {yylval.strval = strdup("float*"); return FLOAT_PTR;}
+"bool" {yylval.strval = strdup("BOOL"); return BOOL;}
+"char" {yylval.strval = strdup("CHAR"); return CHAR;}
+"int" {yylval.strval = strdup("INT"); return INT;}
+"double" {yylval.strval = strdup("DOUBLE"); return DOUBLE;}
+"float" {yylval.strval = strdup("FLOAT"); return FLOAT;}
+"string" {yylval.strval = strdup("STRING"); return STRING;}
+"int*" {yylval.strval = strdup("INT*"); return INT_PTR;}
+"char*" {yylval.strval = strdup("CHAR*"); return CHAR_PTR;}
+"double*" {yylval.strval = strdup("DOUBLE*"); return DOUBLE_PTR;}
+"float*" {yylval.strval = strdup("FLOAT*"); return FLOAT_PTR;}
 "if" {yylval.strval = strdup("IF"); return IF;}
 "else" {yylval.strval = strdup("ELSE"); return ELSE;}
 "while" {yylval.strval = strdup("WHILE"); return WHILE;}

@@ -1,0 +1,106 @@
+(CODE
+	(FUNCTION
+		(p2
+			PUBLIC
+			STATIC
+			(ARGS>>
+				(VAR
+					m1
+				)
+			)
+		)
+		(RETURN
+			(FUNCTION BLOCK
+				(VAR
+					a1
+				)
+				(ID ASSIGN
+					a1
+					10
+				)
+				(IF
+					(&&
+						(==
+							a1
+							m1
+						)
+						(>
+							a1
+							7
+						)
+					)
+					(ID ASSIGN
+						a1
+						(+
+							m1
+							30
+						)
+					)
+					(ELSE
+						(ID ASSIGN
+							a1
+							(-
+								m1
+								15
+							)
+						)
+					)
+				)
+				(RETURN
+					(*
+						a1
+						2
+					)
+				)
+			)
+		)
+	)
+	(FUNCTION
+		(main
+			PUBLIC
+			STATIC
+		)
+		(RETURN
+			VOID
+			(FUNCTION BLOCK
+				(VAR
+					d
+				)
+				(VAR
+					w
+				)
+				(ID ASSIGN
+					w
+					5
+				)
+				(WHILE
+					(<
+						w
+						10
+					)
+					(BLOCK
+						(ID ASSIGN
+							d
+							(FUNCTION CALL
+								p2
+								w
+							)
+						)
+						(ID ASSIGN
+							w
+							(+
+								w
+								2
+							)
+						)
+					)
+				)
+			)
+		)
+	)
+)
+
+ 🂡 ⧓ ⧖ ⧓ ⧖ ⧓ ⧖ ⧔  Semantic Checks Passed! ⧕ ⧖ ⧓ ⧖ ⧓ ⧖ ⧓ 🂡
+
+ 🂡 ⧓ ⧖ ⧓ ⧖ ⧓ ⧖ ⧔  Created 3-Address-Code successfuly! 🐱‍🚀 ⧕ ⧖ ⧓ ⧖ ⧓ ⧖ ⧓ 🂡
+
